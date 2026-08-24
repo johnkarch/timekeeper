@@ -1,0 +1,61 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "@/app/login/actions";
+import type { Role } from "@/lib/types";
+
+const links: { href: string; label: string; roles: Role[] }[] = [
+  { href: "/time-entries", label: "Log Time", roles: ["employee", "admin"] },
+  { href: "/weekly", label: "Weekly", roles: ["employee", "admin"] },
+  { href: "/monthly", label: "Monthly", roles: ["admin"] },
+  { href: "/jobs", label: "Jobs", roles: ["admin"] },
+];
+
+export default function Nav({
+  email,
+  fullName,
+  role,
+}: {
+  email: string;
+  fullName: string | null;
+  role: Role;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <header className="border-b border-gray-200 bg-white">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <nav className="flex items-center gap-1">
+          {links
+            .filter((link) => link.roles.includes(role))
+            .map((link) => {
+              const active = pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                    active ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+        </nav>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">{fullName || email}</span>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+  );
+}
