@@ -16,7 +16,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold text-gray-900">Timekeeper</h1>
         <p className="mb-6 text-sm text-gray-500">Sign in to log and review time.</p>
@@ -54,7 +54,7 @@ export default async function LoginPage({
           </div>
           <button
             type="submit"
-            className="w-full rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Sign in
           </button>

@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!current) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Nav email={current.user.email ?? ""} fullName={current.fullName} role={current.role} />
       <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
     </div>

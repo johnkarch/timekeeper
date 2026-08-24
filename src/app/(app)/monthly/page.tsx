@@ -69,13 +69,13 @@ export default async function MonthlyPage({
         <div className="flex items-center gap-2">
           <Link
             href={monthLink(prevMonth, billedFilter, q)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="rounded-md border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
           >
             ← Prev month
           </Link>
           <Link
             href={monthLink(nextMonth, billedFilter, q)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="rounded-md border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
           >
             Next month →
           </Link>
@@ -116,13 +116,13 @@ export default async function MonthlyPage({
         <JobSearchField defaultValue={q ?? ""} />
         <button
           type="submit"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Apply
         </button>
         <a
           href={`/api/export/monthly?${exportParams.toString()}`}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
         >
           Export CSV
         </a>

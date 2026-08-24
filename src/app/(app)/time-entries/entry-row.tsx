@@ -5,7 +5,13 @@ import { updateTimeEntry, deleteTimeEntry } from "./actions";
 import JobField from "./job-field";
 import type { TimeEntryListItem } from "@/lib/types";
 
-export default function EntryRow({ entry }: { entry: TimeEntryListItem }) {
+export default function EntryRow({
+  entry,
+  weekParam,
+}: {
+  entry: TimeEntryListItem;
+  weekParam: string;
+}) {
   const [editing, setEditing] = useState(false);
   const canEdit = !entry.billed;
 
@@ -15,6 +21,7 @@ export default function EntryRow({ entry }: { entry: TimeEntryListItem }) {
         action={updateTimeEntry.bind(null, entry.id)}
         className="grid gap-3 border-b border-gray-100 py-4 sm:grid-cols-2"
       >
+        <input type="hidden" name="week" value={weekParam} />
         <JobField defaultValue={entry.job_name} />
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Date</label>
@@ -91,6 +98,7 @@ export default function EntryRow({ entry }: { entry: TimeEntryListItem }) {
               if (!confirm("Delete this time entry?")) e.preventDefault();
             }}
           >
+            <input type="hidden" name="week" value={weekParam} />
             <button
               type="submit"
               className="rounded-md border border-red-200 px-2 py-1 text-red-600 hover:bg-red-50"

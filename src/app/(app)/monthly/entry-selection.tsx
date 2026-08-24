@@ -97,7 +97,7 @@ export default function EntrySelection({
           type="submit"
           name="intent"
           value="bill"
-          className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
           Mark billed
         </button>
@@ -105,7 +105,7 @@ export default function EntrySelection({
           type="submit"
           name="intent"
           value="unbill"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="rounded-md border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
         >
           Mark unbilled
         </button>
