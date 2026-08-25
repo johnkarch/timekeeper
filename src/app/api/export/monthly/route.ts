@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   const filename = `monthly-${month}`;
 
   if (format === "xlsx") {
-    const buffer = await buildXlsx("Monthly", header, rows);
+    const buffer = await buildXlsx([{ sheetName: "Monthly", header, rows }]);
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -61,12 +61,18 @@ export async function GET(request: Request) {
       e.billed ? "Yes" : "No",
       e.notes ?? "",
     ]);
-    const buffer = await buildPdf(formatMonthLabel(month), pdfHeader, pdfRows, [
-      65, // Date
-      90, // Employee
-      140, // Job
-      42, // Hours
-      45, // Billed
+    const buffer = await buildPdf(formatMonthLabel(month), [
+      {
+        header: pdfHeader,
+        rows: pdfRows,
+        colWidths: [
+          65, // Date
+          90, // Employee
+          140, // Job
+          42, // Hours
+          45, // Billed
+        ],
+      },
     ]);
     return new Response(new Uint8Array(buffer), {
       headers: {

@@ -54,3 +54,12 @@ export interface EmployeePeriodHours {
   days: number[]; // 14 entries, one per day of the pay period, in order
   total: number;
 }
+
+export interface EmployeeHoursBreakdown {
+  user_id: string;
+  employee_name: string;
+  regular: number;
+  overtime: number;
+  weekend: number;
+  pto: number;
+}

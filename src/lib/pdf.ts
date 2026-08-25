@@ -15,22 +15,26 @@ export interface PdfTableOptions {
   headerColor?: string;
 }
 
-// Renders the same header/rows shape used for CSV/Excel export as a simple
-// paginated table. Good enough for a timesheet printout — not trying to
-// reproduce the on-screen table's styling.
-//
-// `colWidths` gives a fixed width (in points) for every column except the
-// last one — the last column always takes whatever width is left, so its
-// right edge lands on the page margin rather than on another fixed column.
-export function buildPdf(
-  title: string,
-  header: string[],
-  rows: string[][],
-  colWidths: number[],
-  options: PdfTableOptions = {}
-): Promise<Buffer> {
-  const { stripeCount = 0, headerColor } = options;
+export interface PdfSection {
+  // Optional sub-heading printed above this table.
+  heading?: string;
+  header: string[];
+  rows: string[][];
+  // A fixed width (in points) for every column except the last one — the
+  // last column always takes whatever width is left, so its right edge
+  // lands on the page margin rather than on another fixed column.
+  colWidths: number[];
+  options?: PdfTableOptions;
+}
 
+// Renders one or more header/rows tables (the same shape used for CSV/Excel
+// export) as a simple paginated document — good enough for a timesheet
+// printout, not trying to reproduce the on-screen table's styling. Sections
+// flow one after another on the same page with a gap between them, and only
+// spill onto a new page if they actually run out of room — small reports
+// stay a single page rather than always splitting once a second section
+// exists.
+export function buildPdf(title: string, sections: PdfSection[]): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "letter", margin: 40, layout: "landscape" });
     const chunks: Buffer[] = [];
@@ -38,72 +42,96 @@ export function buildPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
+    const startX = doc.page.margins.left;
+    const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const bottomLimit = doc.page.height - doc.page.margins.bottom;
+    const rowHeight = 18;
+
     doc.fontSize(16).font("Helvetica-Bold").text(title);
     doc.moveDown(0.5);
 
-    const startX = doc.page.margins.left;
-    const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-
-    const fixedWidth = colWidths.reduce((sum, w) => sum + w, 0);
-    const widths = [...colWidths, usableWidth - fixedWidth];
-    const colX = widths.map((_, i) =>
-      i === 0 ? startX : startX + widths.slice(0, i).reduce((sum, w) => sum + w, 0)
-    );
-
-    const rowHeight = 18;
-
-    function drawRow(cells: string[], y: number, isHeaderRow: boolean, striped = false) {
-      if (isHeaderRow && headerColor) {
-        doc.rect(startX, y - 2, usableWidth, rowHeight - 2).fill(headerColor);
-      } else if (!isHeaderRow && striped) {
-        doc.rect(startX, y - 2, usableWidth, rowHeight - 2).fill(STRIPE_FILL);
-      }
-
-      cells.forEach((cell, i) => {
-        doc.fillColor(isHeaderRow && headerColor ? "white" : "black");
-        doc.font(isHeaderRow ? "Helvetica-Bold" : "Helvetica").fontSize(9);
-        // Without an explicit height, pdfkit wraps overflowing text across
-        // multiple lines instead of truncating it — `ellipsis` only kicks in
-        // once height is bounded, which is what actually keeps each cell to
-        // a single line so it can't bleed into the row below.
-        doc.text(cell, colX[i], y, {
-          width: widths[i] - 6,
-          height: rowHeight - 6,
-          ellipsis: true,
-        });
-      });
-    }
-
-    function drawHeader(y: number) {
-      drawRow(header, y, true);
-      if (!headerColor) {
-        doc
-          .moveTo(startX, y + rowHeight - 4)
-          .lineTo(startX + usableWidth, y + rowHeight - 4)
-          .strokeColor("#cccccc")
-          .stroke();
-      }
-    }
-
     let y = doc.y;
-    drawHeader(y);
-    y += rowHeight;
 
-    const bottomLimit = doc.page.height - doc.page.margins.bottom;
-    rows.forEach((row, i) => {
-      if (y + rowHeight > bottomLimit) {
+    function ensureRoom(height: number) {
+      if (y + height > bottomLimit) {
         doc.addPage();
         y = doc.page.margins.top;
-        drawHeader(y);
+      }
+    }
+
+    sections.forEach((section, sectionIndex) => {
+      const { header, rows, colWidths, options = {} } = section;
+      const { stripeCount = 0, headerColor } = options;
+
+      if (sectionIndex > 0) {
+        y += 14;
+      }
+
+      if (section.heading) {
+        ensureRoom(rowHeight);
+        doc.fillColor("black").font("Helvetica-Bold").fontSize(13).text(section.heading, startX, y);
+        y = doc.y + 8;
+      }
+
+      const fixedWidth = colWidths.reduce((sum, w) => sum + w, 0);
+      const widths = [...colWidths, usableWidth - fixedWidth];
+      const colX = widths.map((_, i) =>
+        i === 0 ? startX : startX + widths.slice(0, i).reduce((sum, w) => sum + w, 0)
+      );
+
+      function drawRow(cells: string[], rowY: number, isHeaderRow: boolean, striped = false) {
+        if (isHeaderRow && headerColor) {
+          doc.rect(startX, rowY - 2, usableWidth, rowHeight - 2).fill(headerColor);
+        } else if (!isHeaderRow && striped) {
+          doc.rect(startX, rowY - 2, usableWidth, rowHeight - 2).fill(STRIPE_FILL);
+        }
+
+        cells.forEach((cell, i) => {
+          doc.fillColor(isHeaderRow && headerColor ? "white" : "black");
+          doc.font(isHeaderRow ? "Helvetica-Bold" : "Helvetica").fontSize(9);
+          // Without an explicit height, pdfkit wraps overflowing text across
+          // multiple lines instead of truncating it — `ellipsis` only kicks
+          // in once height is bounded, which is what actually keeps each
+          // cell to a single line so it can't bleed into the row below.
+          doc.text(cell, colX[i], rowY, {
+            width: widths[i] - 6,
+            height: rowHeight - 6,
+            ellipsis: true,
+          });
+        });
+      }
+
+      function drawHeader(headerY: number) {
+        drawRow(header, headerY, true);
+        if (!headerColor) {
+          doc
+            .moveTo(startX, headerY + rowHeight - 4)
+            .lineTo(startX + usableWidth, headerY + rowHeight - 4)
+            .strokeColor("#cccccc")
+            .stroke();
+        }
+      }
+
+      ensureRoom(rowHeight);
+      drawHeader(y);
+      y += rowHeight;
+
+      rows.forEach((row, i) => {
+        if (y + rowHeight > bottomLimit) {
+          doc.addPage();
+          y = doc.page.margins.top;
+          drawHeader(y);
+          y += rowHeight;
+        }
+        drawRow(row, y, false, i < stripeCount && i % 2 === 1);
+        y += rowHeight;
+      });
+
+      if (rows.length === 0) {
+        doc.font("Helvetica").fontSize(9).text("No entries.", startX, y);
         y += rowHeight;
       }
-      drawRow(row, y, false, i < stripeCount && i % 2 === 1);
-      y += rowHeight;
     });
-
-    if (rows.length === 0) {
-      doc.font("Helvetica").fontSize(9).text("No entries.", startX, y);
-    }
 
     doc.end();
   });

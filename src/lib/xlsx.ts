@@ -25,47 +25,60 @@ export interface XlsxTableOptions {
   // If given (as a hex color), the header row gets this background with
   // white bold text.
   headerColor?: string;
+  // Excel number format applied to every numeric cell — e.g. "0.0" to keep
+  // a trailing zero (40.0) that Excel would otherwise drop by default.
+  numberFormat?: string;
 }
 
-// Builds a single-sheet workbook from the same header/rows shape used for
-// CSV export. Cells that look like plain numbers (e.g. Hours) are written as
-// real numbers rather than text, so totals work if someone sums the column
-// in Excel.
-export async function buildXlsx(
-  sheetName: string,
-  header: string[],
-  rows: string[][],
-  options: XlsxTableOptions = {}
-): Promise<Buffer> {
-  const { stripeCount = 0, headerColor } = options;
+export interface XlsxSheet {
+  sheetName: string;
+  header: string[];
+  rows: string[][];
+  options?: XlsxTableOptions;
+}
 
+// Builds a workbook with one worksheet per entry in `sheets`, each from the
+// same header/rows shape used for CSV export. Cells that look like plain
+// numbers (e.g. Hours) are written as real numbers rather than text, so
+// totals work if someone sums the column in Excel. Separate worksheets
+// (rather than stacking multiple tables in one sheet) avoid differently
+// shaped tables fighting over shared column widths, since Excel columns are
+// sized per-sheet, not per-table.
+export async function buildXlsx(sheets: XlsxSheet[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(sheetName);
 
-  const headerRow = sheet.addRow(header);
-  headerRow.font = headerColor ? WHITE_BOLD : { bold: true };
-  if (headerColor) {
-    const fill = headerFill(headerColor);
-    headerRow.eachCell({ includeEmpty: true }, (cell) => {
-      cell.fill = fill;
-    });
-  }
+  for (const { sheetName, header, rows, options = {} } of sheets) {
+    const { stripeCount = 0, headerColor, numberFormat } = options;
+    const sheet = workbook.addWorksheet(sheetName);
 
-  rows.forEach((row, i) => {
-    const excelRow = sheet.addRow(row.map((cell) => (NUMERIC.test(cell) ? Number(cell) : cell)));
-    const striped = i < stripeCount && i % 2 === 1;
-    if (striped) {
-      excelRow.eachCell({ includeEmpty: true }, (cell) => {
-        cell.fill = STRIPE_FILL;
+    const headerRow = sheet.addRow(header);
+    headerRow.font = headerColor ? WHITE_BOLD : { bold: true };
+    if (headerColor) {
+      const fill = headerFill(headerColor);
+      headerRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.fill = fill;
       });
     }
-  });
 
-  sheet.columns.forEach((col, i) => {
-    const headerLen = header[i]?.length ?? 10;
-    const maxRowLen = rows.reduce((max, row) => Math.max(max, row[i]?.length ?? 0), 0);
-    col.width = Math.min(Math.max(headerLen, maxRowLen) + 2, 40);
-  });
+    rows.forEach((row, i) => {
+      const excelRow = sheet.addRow(
+        row.map((cell) => (NUMERIC.test(cell) ? Number(cell) : cell))
+      );
+      const striped = i < stripeCount && i % 2 === 1;
+      if (striped || numberFormat) {
+        excelRow.eachCell({ includeEmpty: true }, (cell) => {
+          if (striped) cell.fill = STRIPE_FILL;
+          if (numberFormat && typeof cell.value === "number") cell.numFmt = numberFormat;
+        });
+      }
+    });
+
+    sheet.columns.forEach((col, i) => {
+      const headerLen = header[i]?.length ?? 10;
+      const maxRowLen = rows.reduce((max, row) => Math.max(max, row[i]?.length ?? 0), 0);
+      col.width = Math.min(Math.max(headerLen, maxRowLen) + 2, 40);
+    });
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);

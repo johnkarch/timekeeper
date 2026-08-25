@@ -5,6 +5,7 @@ import { addMonths, currentMonth, formatMonthLabel, payPeriodStart, todayISO } f
 import { fetchSubmittedWeeksForMonth } from "@/lib/week-submissions";
 import SubmittedWeeksTable from "./submitted-weeks-table";
 import PayPeriodCalendar from "./pay-period-calendar";
+import EmployeeHoursTiles from "./employee-hours-tiles";
 import DismissibleBanner from "@/components/dismissible-banner";
 
 function monthLink(month: string) {
@@ -76,6 +77,8 @@ export default async function PayrollPage({
       </div>
 
       {isAdmin && <PayPeriodCalendar periodStart={periodStart} scope={scope} />}
+
+      <EmployeeHoursTiles periodStart={periodStart} />
     </div>
   );
 }
