@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
@@ -23,6 +24,14 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   if (error) {
     console.error("Failed to load profile for", user.id, error);
+    // Signing out clears the broken session so the login page doesn't just
+    // redirect straight back here in a loop — and treating this as a hard
+    // failure (rather than quietly defaulting to "employee") is what
+    // surfaced the last two bugs here instead of hiding them.
+    await supabase.auth.signOut();
+    redirect(
+      `/login?error=${encodeURIComponent("We couldn't verify your account. Please sign in again.")}`
+    );
   }
 
   const role: Role = profile?.role === "admin" ? "admin" : "employee";

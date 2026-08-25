@@ -38,53 +38,58 @@ export default async function JobsPage({
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {success && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">Saved.</p>}
 
-      <form
-        action={createJob}
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-      >
-        <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
-            Job
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            placeholder="100001 KAIN - Modern Escape"
-            className="w-96 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
+      <div className="space-y-2">
+        <h2 className="text-base font-bold text-gray-900">Add Job</h2>
+        <form action={createJob} className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
+                Enter Job Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                placeholder="100001 KAIN - Modern Escape"
+                className="w-96 rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Add job
+            </button>
+          </div>
           <p className="mt-1 text-xs text-gray-400">Must start with a 6-digit job number.</p>
-        </div>
-        <button
-          type="submit"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Add job
-        </button>
-      </form>
+        </form>
+      </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-gray-500">
-            <tr>
-              <th className="px-4 py-2 font-medium">Job</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.length === 0 ? (
+      <div className="space-y-2">
+        <h2 className="text-base font-bold text-gray-900">Job List</h2>
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-gray-200 text-gray-500">
               <tr>
-                <td colSpan={3} className="px-4 py-6 text-center text-gray-500">
-                  No jobs yet.
-                </td>
+                <th className="px-4 py-2 font-medium">Job</th>
+                <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 font-medium">Actions</th>
               </tr>
-            ) : (
-              jobs.map((job) => <JobRow key={job.id} job={job} />)
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {jobs.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-gray-500">
+                    No jobs yet.
+                  </td>
+                </tr>
+              ) : (
+                jobs.map((job) => <JobRow key={job.id} job={job} />)
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
