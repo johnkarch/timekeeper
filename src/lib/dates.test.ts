@@ -8,6 +8,7 @@ import {
   formatMonthLabel,
   todayISO,
   currentMonth,
+  payPeriodStart,
 } from "./dates";
 
 // 2026-08-24 is a known Monday — used as a fixed anchor throughout so the
@@ -98,6 +99,32 @@ describe("formatDateLabel", () => {
 describe("formatMonthLabel", () => {
   it("formats a month as full month name and year", () => {
     expect(formatMonthLabel("2026-08")).toBe("August 2026");
+  });
+});
+
+describe("payPeriodStart", () => {
+  // 2026-08-24 lands exactly on a 14-day period boundary from the fixed
+  // anchor, so its period runs 2026-08-24 through 2026-09-06.
+
+  it("returns the same date when already on a period boundary", () => {
+    expect(payPeriodStart("2026-08-24")).toBe("2026-08-24");
+  });
+
+  it("stays in the same period for the rest of week one", () => {
+    expect(payPeriodStart("2026-08-27")).toBe("2026-08-24");
+  });
+
+  it("stays in the same period for all of week two", () => {
+    expect(payPeriodStart("2026-08-31")).toBe("2026-08-24");
+    expect(payPeriodStart("2026-09-06")).toBe("2026-08-24");
+  });
+
+  it("rolls forward to the next period on day 15", () => {
+    expect(payPeriodStart("2026-09-07")).toBe("2026-09-07");
+  });
+
+  it("rolls backward to the previous period the day before", () => {
+    expect(payPeriodStart("2026-08-23")).toBe("2026-08-10");
   });
 });
 

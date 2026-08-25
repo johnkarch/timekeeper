@@ -8,6 +8,7 @@ export interface MonthlyEntry {
   billed: boolean;
   job_name: string;
   employee_name: string;
+  user_id: string;
 }
 
 interface MonthlyQueryRow {
@@ -16,6 +17,7 @@ interface MonthlyQueryRow {
   hours: number | string;
   notes: string | null;
   billed: boolean;
+  user_id: string;
   jobs: { name: string };
   profiles: { full_name: string | null; email: string | null };
 }
@@ -32,7 +34,9 @@ export async function fetchMonthlyEntries(filters: MonthlyFilters): Promise<Mont
 
   let query = supabase
     .from("time_entries")
-    .select("id, entry_date, hours, notes, billed, jobs!inner(name), profiles!inner(full_name, email)")
+    .select(
+      "id, entry_date, hours, notes, billed, user_id, jobs!inner(name), profiles!inner(full_name, email)"
+    )
     .gte("entry_date", filters.start)
     .lt("entry_date", filters.end)
     .order("entry_date", { ascending: true });
@@ -58,5 +62,6 @@ export async function fetchMonthlyEntries(filters: MonthlyFilters): Promise<Mont
     billed: row.billed,
     job_name: row.jobs.name,
     employee_name: row.profiles.full_name || row.profiles.email || "Unknown",
+    user_id: row.user_id,
   }));
 }

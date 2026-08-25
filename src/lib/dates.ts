@@ -10,6 +10,23 @@ export function mondayOf(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Biweekly pay periods are fixed, non-shifting 14-day blocks — not just
+// "the last two weeks from wherever you're looking." This anchor (a Monday)
+// is an arbitrary but fixed reference point; every period is some whole
+// number of 14-day blocks from it, so periods always land on the same
+// boundaries no matter what date you start browsing from. Change this if it
+// needs to line up with a specific real payroll calendar instead.
+const PAY_PERIOD_ANCHOR = "2024-01-01";
+
+export function payPeriodStart(dateStr: string): string {
+  const monday = mondayOf(dateStr);
+  const anchor = new Date(`${PAY_PERIOD_ANCHOR}T12:00:00Z`);
+  const current = new Date(`${monday}T12:00:00Z`);
+  const daysSinceAnchor = Math.round((current.getTime() - anchor.getTime()) / 86400000);
+  const periodIndex = Math.floor(daysSinceAnchor / 14);
+  return addDays(PAY_PERIOD_ANCHOR, periodIndex * 14);
+}
+
 export function addDays(dateStr: string, n: number): string {
   const d = new Date(`${dateStr}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);

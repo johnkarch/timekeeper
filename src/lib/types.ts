@@ -47,3 +47,10 @@ export interface SubmittedWeekSummary {
   total_hours: number;
   job_breakdown: JobHours[];
 }
+
+export interface EmployeePeriodHours {
+  user_id: string;
+  employee_name: string;
+  days: number[]; // 14 entries, one per day of the pay period, in order
+  total: number;
+}

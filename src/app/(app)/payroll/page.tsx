@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { addMonths, currentMonth, formatMonthLabel } from "@/lib/dates";
+import { addMonths, currentMonth, formatMonthLabel, payPeriodStart, todayISO } from "@/lib/dates";
 import { fetchSubmittedWeeksForMonth } from "@/lib/week-submissions";
 import SubmittedWeeksTable from "./submitted-weeks-table";
+import PayPeriodCalendar from "./pay-period-calendar";
 import DismissibleBanner from "@/components/dismissible-banner";
 
 function monthLink(month: string) {
@@ -13,9 +14,16 @@ function monthLink(month: string) {
 export default async function PayrollPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; error?: string; success?: string }>;
+  searchParams: Promise<{
+    month?: string;
+    period?: string;
+    scope?: string;
+    error?: string;
+    success?: string;
+  }>;
 }) {
-  const { month: monthParam, error, success } = await searchParams;
+  const { month: monthParam, period: periodParam, scope: scopeParam, error, success } =
+    await searchParams;
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
@@ -24,6 +32,9 @@ export default async function PayrollPage({
   const prevMonth = addMonths(month, -1);
   const nextMonth = addMonths(month, 1);
   const isAdmin = current.role === "admin";
+
+  const periodStart = payPeriodStart(periodParam || todayISO());
+  const scope = scopeParam === "submitted" ? "submitted" : "all";
 
   // No role filtering needed here — RLS already scopes the rows returned to
   // "your own submissions, or everyone's if you're an admin."
@@ -56,13 +67,15 @@ export default async function PayrollPage({
       {success && <DismissibleBanner message="Saved." variant="success" />}
 
       <div className="space-y-2">
-        <h2 className="text-base font-bold text-gray-900">Submitted weeks</h2>
+        <h2 className="text-base font-bold text-gray-900">Submitted Weeks</h2>
         <p className="text-xs text-gray-400">
           Click a week to see its hours by job.
           {isAdmin && " Toggle a week off to unlock it for the employee again."}
         </p>
         <SubmittedWeeksTable weeks={weeks} isAdmin={isAdmin} />
       </div>
+
+      {isAdmin && <PayPeriodCalendar periodStart={periodStart} scope={scope} />}
     </div>
   );
 }
