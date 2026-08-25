@@ -5,7 +5,7 @@ import { createTimeEntry } from "./actions";
 import JobField from "./job-field";
 import { todayISO } from "@/lib/dates";
 
-export default function NewEntryForm() {
+export default function NewEntryForm({ weekParam }: { weekParam: string }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!expanded) {
@@ -25,6 +25,7 @@ export default function NewEntryForm() {
       action={createTimeEntry}
       className="grid gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2"
     >
+      <input type="hidden" name="week" value={weekParam} />
       <JobField />
       <div>
         <label htmlFor="entry_date" className="mb-1 block text-sm font-medium text-gray-700">

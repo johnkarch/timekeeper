@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { searchJobs } from "@/app/(app)/time-entries/actions";
+import { searchJobs } from "@/app/(app)/weekly/actions";
 import type { Job } from "@/lib/types";
 
 // Used to filter a list of entries by job (Weekly, Monthly) rather than to

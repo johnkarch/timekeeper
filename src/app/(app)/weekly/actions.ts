@@ -25,16 +25,19 @@ export async function searchJobs(text: string): Promise<Job[]> {
   return data ?? [];
 }
 
-function timeEntriesPath(extra: Record<string, string> = {}) {
+// Redirects back to /weekly, preserving whichever week the user was
+// viewing so adding an entry doesn't bounce them back to the current week.
+function weeklyPath(week: string, extra: Record<string, string> = {}) {
   const params = new URLSearchParams(extra);
+  if (week) params.set("week", week);
   const qs = params.toString();
-  return qs ? `/time-entries?${qs}` : "/time-entries";
+  return qs ? `/weekly?${qs}` : "/weekly";
 }
 
-async function findActiveJobOrRedirect(jobText: string) {
+async function findActiveJobOrRedirect(jobText: string, week: string) {
   const trimmed = jobText.trim();
   if (!trimmed) {
-    redirect(timeEntriesPath({ error: "Choose a job." }));
+    redirect(weeklyPath(week, { error: "Choose a job." }));
   }
 
   const supabase = await createClient();
@@ -46,30 +49,16 @@ async function findActiveJobOrRedirect(jobText: string) {
 
   if (!job) {
     redirect(
-      timeEntriesPath({
+      weeklyPath(week, {
         error: "No job found matching that text — pick one from the dropdown.",
       })
     );
   }
   if (!job.is_active) {
-    redirect(timeEntriesPath({ error: "That job is marked inactive." }));
+    redirect(weeklyPath(week, { error: "That job is marked inactive." }));
   }
 
   return job;
-}
-
-function parseEntryFields(formData: FormData) {
-  const jobText = String(formData.get("job") ?? "").trim();
-  const entryDate = String(formData.get("entry_date") ?? "");
-  const hours = Number(formData.get("hours"));
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-  return { jobText, entryDate, hours, notes };
-}
-
-function validateDateAndHours(entryDate: string, hours: number) {
-  if (!entryDate || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
-    redirect(timeEntriesPath({ error: "Enter a valid date and hours (0–24)." }));
-  }
 }
 
 export async function createTimeEntry(formData: FormData) {
@@ -79,9 +68,17 @@ export async function createTimeEntry(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { jobText, entryDate, hours, notes } = parseEntryFields(formData);
-  validateDateAndHours(entryDate, hours);
-  const job = await findActiveJobOrRedirect(jobText);
+  const jobText = String(formData.get("job") ?? "").trim();
+  const entryDate = String(formData.get("entry_date") ?? "");
+  const hours = Number(formData.get("hours"));
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const week = String(formData.get("week") ?? "");
+
+  if (!entryDate || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
+    redirect(weeklyPath(week, { error: "Enter a valid date and hours (0–24)." }));
+  }
+
+  const job = await findActiveJobOrRedirect(jobText, week);
 
   const { error } = await supabase.from("time_entries").insert({
     user_id: user.id,
@@ -92,9 +89,9 @@ export async function createTimeEntry(formData: FormData) {
   });
 
   if (error) {
-    redirect(timeEntriesPath({ error: error.message }));
+    redirect(weeklyPath(week, { error: error.message }));
   }
 
-  revalidatePath("/time-entries");
-  redirect(timeEntriesPath({ success: "1" }));
+  revalidatePath("/weekly");
+  redirect(weeklyPath(week, { success: "1" }));
 }

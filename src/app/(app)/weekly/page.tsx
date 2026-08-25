@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
 import { fetchOwnEntries } from "@/lib/own-entries";
+import NewEntryForm from "./new-entry-form";
+import DismissibleBanner from "@/components/dismissible-banner";
 
 interface DayCell {
   hours: number;
@@ -26,9 +28,9 @@ function weekLink(monday: string) {
 export default async function WeeklyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; error?: string; success?: string }>;
 }) {
-  const { week } = await searchParams;
+  const { week, error, success } = await searchParams;
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
@@ -94,35 +96,39 @@ export default async function WeeklyPage({
         </div>
       </div>
 
-      <form
-        method="GET"
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-      >
-        <div>
-          <label htmlFor="week" className="mb-1 block text-sm font-medium text-gray-700">
-            Jump to a date in the week
-          </label>
-          <input
-            id="week"
-            name="week"
-            type="date"
-            defaultValue={monday}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Apply
-        </button>
-        <a
-          href={`/api/export/weekly?${exportParams.toString()}`}
-          className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-        >
-          Export CSV
-        </a>
-      </form>
+      {error && <DismissibleBanner message={error} variant="error" />}
+      {success && <DismissibleBanner message="Saved." variant="success" />}
+
+      <div className="flex flex-wrap items-start gap-3">
+        <NewEntryForm weekParam={monday} />
+
+        <form method="GET" className="flex flex-wrap items-end gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="week" className="text-sm font-medium whitespace-nowrap text-gray-700">
+              Jump to a date in the week
+            </label>
+            <input
+              id="week"
+              name="week"
+              type="date"
+              defaultValue={monday}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Apply
+          </button>
+          <a
+            href={`/api/export/weekly?${exportParams.toString()}`}
+            className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+          >
+            Export CSV
+          </a>
+        </form>
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
