@@ -34,16 +34,18 @@ export async function createJob(formData: FormData) {
   redirect("/jobs?success=1");
 }
 
-export async function updateJobName(id: string, formData: FormData) {
+export async function updateJob(id: string, formData: FormData) {
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
   if (!isValidJobName(name)) {
     redirect(`/jobs?error=${encodeURIComponent("Job must start with a 6-digit number.")}`);
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("jobs").update({ name }).eq("id", id);
+  const { error } = await supabase.from("jobs").update({ name, notes }).eq("id", id);
 
   if (error) {
     const message = error.code === "23505" ? "That job number is already in use." : error.message;
@@ -65,4 +67,29 @@ export async function setJobActive(id: string, isActive: boolean) {
   }
 
   revalidatePath("/jobs");
+}
+
+export async function bulkUpdateBilled(formData: FormData) {
+  await requireAdmin();
+
+  const ids = formData.getAll("entryIds").map(String);
+  const intent = String(formData.get("intent"));
+
+  if (ids.length === 0) {
+    redirect(`/jobs?error=${encodeURIComponent("Select at least one entry first.")}`);
+  }
+
+  const billed = intent === "bill";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("time_entries")
+    .update({ billed, billed_at: billed ? new Date().toISOString().slice(0, 10) : null })
+    .in("id", ids);
+
+  if (error) {
+    redirect(`/jobs?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/jobs");
+  redirect("/jobs?success=1");
 }

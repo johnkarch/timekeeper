@@ -86,6 +86,7 @@ create table public.jobs (
   id uuid primary key default gen_random_uuid(),
   name text not null check (name ~ '^\d{6}(\D|$)'),
   is_active boolean not null default true,
+  notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -3,8 +3,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addMonths, currentMonth, firstOfMonth, formatMonthLabel } from "@/lib/dates";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
-import { bulkUpdateBilled } from "./actions";
-import EntrySelection from "./entry-selection";
 import JobSearchField from "@/app/(app)/job-search-field";
 
 function monthLink(month: string, billed?: string, q?: string) {
@@ -17,9 +15,9 @@ function monthLink(month: string, billed?: string, q?: string) {
 export default async function MonthlyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; billed?: string; q?: string; error?: string; success?: string }>;
+  searchParams: Promise<{ month?: string; billed?: string; q?: string }>;
 }) {
-  const { month: monthParam, billed: billedParam, q, error, success } = await searchParams;
+  const { month: monthParam, billed: billedParam, q } = await searchParams;
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
@@ -128,18 +126,40 @@ export default async function MonthlyPage({
         </a>
       </form>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">Updated.</p>
-      )}
-
-      <EntrySelection
-        entries={entries}
-        month={month}
-        billedFilter={billedFilter ?? ""}
-        q={q ?? ""}
-        action={bulkUpdateBilled}
-      />
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-gray-200 text-gray-500">
+            <tr>
+              <th className="px-4 py-2 font-medium">Date</th>
+              <th className="px-4 py-2 font-medium">Employee</th>
+              <th className="px-4 py-2 font-medium">Job</th>
+              <th className="px-4 py-2 font-medium">Hours</th>
+              <th className="px-4 py-2 font-medium">Notes</th>
+              <th className="px-4 py-2 font-medium">Billed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                  No entries match.
+                </td>
+              </tr>
+            ) : (
+              entries.map((e) => (
+                <tr key={e.id} className="border-b border-gray-100 last:border-0">
+                  <td className="px-4 py-2">{e.entry_date}</td>
+                  <td className="px-4 py-2">{e.employee_name}</td>
+                  <td className="px-4 py-2">{e.job_name}</td>
+                  <td className="px-4 py-2">{e.hours}</td>
+                  <td className="px-4 py-2 text-gray-500">{e.notes ?? ""}</td>
+                  <td className="px-4 py-2">{e.billed ? "Yes" : "No"}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-4">
         <div className="mb-2 flex items-center justify-between">
