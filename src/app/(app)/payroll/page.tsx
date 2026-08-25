@@ -34,7 +34,7 @@ export default async function PayrollPage({
   const isAdmin = current.role === "admin";
 
   const periodStart = payPeriodStart(periodParam || todayISO());
-  const scope = scopeParam === "submitted" ? "submitted" : "all";
+  const scope = scopeParam === "all" ? "all" : "submitted";
 
   // No role filtering needed here — RLS already scopes the rows returned to
   // "your own submissions, or everyone's if you're an admin."

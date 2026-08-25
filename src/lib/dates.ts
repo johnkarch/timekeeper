@@ -47,6 +47,17 @@ export function formatDateLabel(dateStr: string): string {
   });
 }
 
+// A single-letter weekday + numeric date ("M" / "8/24") — used wherever a
+// full weekday name ("Mon, Aug 24") would be too wide, e.g. a 14-column
+// pay-period calendar.
+export function shortDayLabel(dateStr: string): { weekday: string; date: string } {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  return {
+    weekday: d.toLocaleDateString("en-US", { weekday: "narrow", timeZone: "UTC" }),
+    date: d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", timeZone: "UTC" }),
+  };
+}
+
 // Months are represented as "YYYY-MM" strings throughout — matches the
 // native <input type="month"> value format.
 

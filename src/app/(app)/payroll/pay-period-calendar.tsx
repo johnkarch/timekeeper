@@ -1,22 +1,15 @@
 import Link from "next/link";
-import { addDays, formatDateLabel, todayISO } from "@/lib/dates";
+import { addDays, formatDateLabel, shortDayLabel, todayISO } from "@/lib/dates";
 import { fetchPayPeriodCalendar } from "@/lib/pay-period-calendar";
+import ExportMenu from "@/components/export-menu";
+
+const EXPORT_FORMATS = [
+  { format: "xlsx", label: "Excel (.xlsx)" },
+  { format: "pdf", label: "PDF" },
+];
 
 function periodLink(periodStart: string, scope: "all" | "submitted") {
   return `/payroll?period=${periodStart}&scope=${scope}`;
-}
-
-// A short, two-line header ("M" / "8/24") keeps 14 day columns from forcing
-// horizontal scroll — full weekday names ("Mon, Aug 24") are too wide to fit
-// that many side by side. The columns are always in fixed Monday..Sunday
-// order (with a divider between the two weeks), so a single-letter weekday
-// is enough of a cue without needing the full name.
-function shortDayParts(dateStr: string): { weekday: string; date: string } {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  return {
-    weekday: d.toLocaleDateString("en-US", { weekday: "narrow", timeZone: "UTC" }),
-    date: d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", timeZone: "UTC" }),
-  };
 }
 
 export default async function PayPeriodCalendar({
@@ -47,13 +40,13 @@ export default async function PayPeriodCalendar({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-gray-900">Pay Period Calendar</h2>
-          <p className="text-xs text-gray-400">
-            {formatDateLabel(periodStart)} – {formatDateLabel(periodEnd)}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Pay Period Calendar</h2>
+            <p className="text-xs text-gray-400">
+              {formatDateLabel(periodStart)} – {formatDateLabel(periodEnd)}
+            </p>
+          </div>
           <Link
             href={periodLink(addDays(periodStart, -14), scope)}
             className="rounded-md border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
@@ -66,6 +59,13 @@ export default async function PayPeriodCalendar({
           >
             Next period →
           </Link>
+        </div>
+        <div className="flex items-center gap-3">
+          <ExportMenu
+            basePath="/api/export/payroll"
+            params={{ period: periodStart, scope }}
+            formats={EXPORT_FORMATS}
+          />
           <Link
             href={periodLink(periodStart, submittedOnly ? "all" : "submitted")}
             className="inline-flex items-center gap-2"
@@ -94,7 +94,7 @@ export default async function PayPeriodCalendar({
             <tr>
               <th className="px-3 py-2 font-medium whitespace-nowrap">Employee</th>
               {days.map((day, i) => {
-                const { weekday, date } = shortDayParts(day);
+                const { weekday, date } = shortDayLabel(day);
                 return (
                   <th
                     key={day}

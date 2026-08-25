@@ -9,6 +9,7 @@ import {
   todayISO,
   currentMonth,
   payPeriodStart,
+  shortDayLabel,
 } from "./dates";
 
 // 2026-08-24 is a known Monday — used as a fixed anchor throughout so the
@@ -125,6 +126,16 @@ describe("payPeriodStart", () => {
 
   it("rolls backward to the previous period the day before", () => {
     expect(payPeriodStart("2026-08-23")).toBe("2026-08-10");
+  });
+});
+
+describe("shortDayLabel", () => {
+  it("returns a single-letter weekday and an M/D date", () => {
+    expect(shortDayLabel("2026-08-24")).toEqual({ weekday: "M", date: "8/24" });
+  });
+
+  it("handles a single-digit day and double-digit month", () => {
+    expect(shortDayLabel("2026-12-03")).toEqual({ weekday: "T", date: "12/3" });
   });
 });
 

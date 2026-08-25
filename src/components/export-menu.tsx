@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const FORMATS: { format: string; label: string }[] = [
+const DEFAULT_FORMATS: { format: string; label: string }[] = [
   { format: "csv", label: "CSV" },
   { format: "xlsx", label: "Excel (.xlsx)" },
   { format: "pdf", label: "PDF" },
@@ -13,9 +13,11 @@ const FORMATS: { format: string; label: string }[] = [
 export default function ExportMenu({
   basePath,
   params,
+  formats = DEFAULT_FORMATS,
 }: {
   basePath: string;
   params: Record<string, string>;
+  formats?: { format: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ export default function ExportMenu({
 
       {open && (
         <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
-          {FORMATS.map(({ format, label }) => (
+          {formats.map(({ format, label }) => (
             <a
               key={format}
               href={urlFor(format)}
