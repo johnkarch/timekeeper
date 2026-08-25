@@ -69,6 +69,24 @@ export async function setJobActive(id: string, isActive: boolean) {
   revalidatePath("/jobs");
 }
 
+export async function deleteJob(id: string) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("jobs").delete().eq("id", id);
+
+  if (error) {
+    const message =
+      error.code === "23503"
+        ? "Can't delete this job — it has time entries logged against it. Deactivate it instead."
+        : error.message;
+    redirect(`/jobs?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/jobs");
+  redirect("/jobs?success=1");
+}
+
 export async function bulkUpdateBilled(formData: FormData) {
   await requireAdmin();
 

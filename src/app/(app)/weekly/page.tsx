@@ -60,7 +60,7 @@ export default async function WeeklyPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-500">Weekly view</p>
+          <p className="text-sm font-medium text-gray-500">Week Overview</p>
           <h1 className="text-2xl font-semibold text-gray-900">
             {formatDateLabel(monday)} – {formatDateLabel(sunday)}
           </h1>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { updateJob, setJobActive } from "./actions";
+import { updateJob, setJobActive, deleteJob } from "./actions";
 import { formatDateLabel } from "@/lib/dates";
 import type { JobWithEntries } from "@/lib/types";
 
@@ -83,6 +83,20 @@ export default function JobBlock({
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Cancel
+            </button>
+          </form>
+          <form
+            action={deleteJob.bind(null, job.id)}
+            onSubmit={(e) => {
+              if (!confirm(`Delete "${job.name}"? This can't be undone.`)) e.preventDefault();
+            }}
+            className="mt-2"
+          >
+            <button
+              type="submit"
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              Delete job
             </button>
           </form>
         </td>

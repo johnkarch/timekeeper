@@ -115,8 +115,17 @@ create policy "jobs: only admins can update"
   to authenticated
   using (public.is_admin());
 
+-- A job with time entries against it can't actually be deleted (the
+-- foreign key on time_entries.job_id blocks it) — this is only reachable
+-- for a job created by mistake with nothing logged against it yet.
+-- Deactivate is the intended way to retire a job with real history.
+create policy "jobs: only admins can delete"
+  on public.jobs for delete
+  to authenticated
+  using (public.is_admin());
+
 -- See the note above profiles' grant statement — same reasoning applies here.
-grant select, insert, update on public.jobs to authenticated;
+grant select, insert, update, delete on public.jobs to authenticated;
 
 -- ============================================================================
 -- 3. TIME ENTRIES
