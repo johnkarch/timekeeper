@@ -24,7 +24,7 @@ export default function Nav({
   const pathname = usePathname();
 
   return (
-    <header className="bg-teal-500">
+    <header className="bg-[#3d8f86]">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <nav className="flex items-center gap-1">
           {links
@@ -36,7 +36,7 @@ export default function Nav({
                   key={link.href}
                   href={link.href}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                    active ? "bg-white text-teal-700" : "text-white hover:bg-white/10"
+                    active ? "bg-white text-[#295c58]" : "text-white hover:bg-white/10"
                   }`}
                 >
                   {link.label}

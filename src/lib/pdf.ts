@@ -1,5 +1,20 @@
 import PDFDocument from "pdfkit";
 
+// Light grey used to shade alternating rows — matches the app's own
+// bg-gray-100 elsewhere in the UI.
+const STRIPE_FILL = "#f3f4f6";
+
+export interface PdfTableOptions {
+  // Shades every other one of the FIRST this-many rows light grey — e.g.
+  // pass the number of employee rows so a trailing totals row underneath
+  // them stays unshaded rather than participating in the alternating
+  // pattern by coincidence.
+  stripeCount?: number;
+  // If given, the header row gets this background color with white bold
+  // text, instead of the default plain header with a thin rule underneath.
+  headerColor?: string;
+}
+
 // Renders the same header/rows shape used for CSV/Excel export as a simple
 // paginated table. Good enough for a timesheet printout — not trying to
 // reproduce the on-screen table's styling.
@@ -11,8 +26,11 @@ export function buildPdf(
   title: string,
   header: string[],
   rows: string[][],
-  colWidths: number[]
+  colWidths: number[],
+  options: PdfTableOptions = {}
 ): Promise<Buffer> {
+  const { stripeCount = 0, headerColor } = options;
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "letter", margin: 40, layout: "landscape" });
     const chunks: Buffer[] = [];
@@ -34,9 +52,16 @@ export function buildPdf(
 
     const rowHeight = 18;
 
-    function drawRow(cells: string[], y: number, bold: boolean) {
-      doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(9);
+    function drawRow(cells: string[], y: number, isHeaderRow: boolean, striped = false) {
+      if (isHeaderRow && headerColor) {
+        doc.rect(startX, y - 2, usableWidth, rowHeight - 2).fill(headerColor);
+      } else if (!isHeaderRow && striped) {
+        doc.rect(startX, y - 2, usableWidth, rowHeight - 2).fill(STRIPE_FILL);
+      }
+
       cells.forEach((cell, i) => {
+        doc.fillColor(isHeaderRow && headerColor ? "white" : "black");
+        doc.font(isHeaderRow ? "Helvetica-Bold" : "Helvetica").fontSize(9);
         // Without an explicit height, pdfkit wraps overflowing text across
         // multiple lines instead of truncating it — `ellipsis` only kicks in
         // once height is bounded, which is what actually keeps each cell to
@@ -51,11 +76,13 @@ export function buildPdf(
 
     function drawHeader(y: number) {
       drawRow(header, y, true);
-      doc
-        .moveTo(startX, y + rowHeight - 4)
-        .lineTo(startX + usableWidth, y + rowHeight - 4)
-        .strokeColor("#cccccc")
-        .stroke();
+      if (!headerColor) {
+        doc
+          .moveTo(startX, y + rowHeight - 4)
+          .lineTo(startX + usableWidth, y + rowHeight - 4)
+          .strokeColor("#cccccc")
+          .stroke();
+      }
     }
 
     let y = doc.y;
@@ -63,16 +90,16 @@ export function buildPdf(
     y += rowHeight;
 
     const bottomLimit = doc.page.height - doc.page.margins.bottom;
-    for (const row of rows) {
+    rows.forEach((row, i) => {
       if (y + rowHeight > bottomLimit) {
         doc.addPage();
         y = doc.page.margins.top;
         drawHeader(y);
         y += rowHeight;
       }
-      drawRow(row, y, false);
+      drawRow(row, y, false, i < stripeCount && i % 2 === 1);
       y += rowHeight;
-    }
+    });
 
     if (rows.length === 0) {
       doc.font("Helvetica").fontSize(9).text("No entries.", startX, y);

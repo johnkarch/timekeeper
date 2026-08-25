@@ -7,6 +7,11 @@ import { buildPdf } from "@/lib/pdf";
 
 export const runtime = "nodejs";
 
+// Matches the app's own header bar (src/app/(app)/nav.tsx) — a desaturated
+// teal, same hue and lightness as Tailwind's teal-500 with saturation cut
+// roughly in half.
+const HEADER_COLOR = "#3d8f86";
+
 export async function GET(request: Request) {
   const current = await getCurrentUser();
   if (!current) redirect("/login");
@@ -36,6 +41,10 @@ export async function GET(request: Request) {
     String(row.total),
   ]);
 
+  // Captured before the totals row is appended, so the alternating shading
+  // only ever applies to actual employee rows, not the summary row below them.
+  const employeeRowCount = dataRows.length;
+
   const dayTotals = days.map((_, i) => rows.reduce((sum, row) => sum + row.days[i], 0));
   const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
   dataRows.push(["Total", ...dayTotals.map((t) => (t > 0 ? String(t) : "")), String(grandTotal)]);
@@ -44,7 +53,10 @@ export async function GET(request: Request) {
   const filename = `payroll-${periodStart}`;
 
   if (format === "pdf") {
-    const buffer = await buildPdf(title, header, dataRows, [90, ...Array(14).fill(40)]);
+    const buffer = await buildPdf(title, header, dataRows, [90, ...Array(14).fill(40)], {
+      stripeCount: employeeRowCount,
+      headerColor: HEADER_COLOR,
+    });
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
@@ -53,7 +65,10 @@ export async function GET(request: Request) {
     });
   }
 
-  const buffer = await buildXlsx("Payroll", header, dataRows);
+  const buffer = await buildXlsx("Payroll", header, dataRows, {
+    stripeCount: employeeRowCount,
+    headerColor: HEADER_COLOR,
+  });
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
