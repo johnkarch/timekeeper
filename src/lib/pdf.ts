@@ -3,7 +3,16 @@ import PDFDocument from "pdfkit";
 // Renders the same header/rows shape used for CSV/Excel export as a simple
 // paginated table. Good enough for a timesheet printout — not trying to
 // reproduce the on-screen table's styling.
-export function buildPdf(title: string, header: string[], rows: string[][]): Promise<Buffer> {
+//
+// `colWidths` gives a fixed width (in points) for every column except the
+// last one — the last column always takes whatever width is left, so its
+// right edge lands on the page margin rather than on another fixed column.
+export function buildPdf(
+  title: string,
+  header: string[],
+  rows: string[][],
+  colWidths: number[]
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "letter", margin: 40, layout: "landscape" });
     const chunks: Buffer[] = [];
@@ -16,13 +25,27 @@ export function buildPdf(title: string, header: string[], rows: string[][]): Pro
 
     const startX = doc.page.margins.left;
     const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colWidth = usableWidth / header.length;
+
+    const fixedWidth = colWidths.reduce((sum, w) => sum + w, 0);
+    const widths = [...colWidths, usableWidth - fixedWidth];
+    const colX = widths.map((_, i) =>
+      i === 0 ? startX : startX + widths.slice(0, i).reduce((sum, w) => sum + w, 0)
+    );
+
     const rowHeight = 18;
 
     function drawRow(cells: string[], y: number, bold: boolean) {
       doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(9);
       cells.forEach((cell, i) => {
-        doc.text(cell, startX + i * colWidth, y, { width: colWidth - 6, ellipsis: true });
+        // Without an explicit height, pdfkit wraps overflowing text across
+        // multiple lines instead of truncating it — `ellipsis` only kicks in
+        // once height is bounded, which is what actually keeps each cell to
+        // a single line so it can't bleed into the row below.
+        doc.text(cell, colX[i], y, {
+          width: widths[i] - 6,
+          height: rowHeight - 6,
+          ellipsis: true,
+        });
       });
     }
 

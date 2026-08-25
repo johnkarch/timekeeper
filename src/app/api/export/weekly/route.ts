@@ -44,7 +44,23 @@ export async function GET(request: Request) {
   }
 
   if (format === "pdf") {
-    const buffer = await buildPdf(`Week of ${monday} – ${sunday}`, header, rows);
+    // Billed moves ahead of Notes here (unlike the CSV/Excel column order
+    // above) so Notes stays last and can take up whatever width is left on
+    // the page rather than being squeezed by a fixed column after it.
+    const pdfHeader = ["Date", "Job", "Hours", "Billed", "Notes"];
+    const pdfRows = entries.map((e) => [
+      e.entry_date,
+      e.job_name,
+      String(e.hours),
+      e.billed ? "Yes" : "No",
+      e.notes ?? "",
+    ]);
+    const buffer = await buildPdf(`Week of ${monday} – ${sunday}`, pdfHeader, pdfRows, [
+      65, // Date
+      180, // Job
+      42, // Hours
+      45, // Billed
+    ]);
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
