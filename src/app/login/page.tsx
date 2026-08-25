@@ -12,7 +12,7 @@ export default async function LoginPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/time-entries");
+  if (user) redirect("/weekly");
 
   const { error } = await searchParams;
 

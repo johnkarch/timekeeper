@@ -11,8 +11,8 @@ interface EntryRow {
 }
 
 // Fetches only the given user's own entries within a date range — used by
-// Log Time's entry list and Week Overview's grid, both of which are
-// always scoped to "my own hours," regardless of role.
+// Week Overview's grid, which is always scoped to "my own hours," regardless
+// of role.
 export async function fetchOwnEntries(
   userId: string,
   start: string,

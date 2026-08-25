@@ -105,7 +105,7 @@ export default async function WeeklyPage({
         <form method="GET" className="flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
             <label htmlFor="week" className="text-sm font-medium whitespace-nowrap text-gray-700">
-              Jump to a date in the week
+              Jump to the week of:
             </label>
             <input
               id="week"

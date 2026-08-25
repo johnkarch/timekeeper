@@ -33,7 +33,7 @@ export default async function JobsPage({
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
-  if (current.role !== "admin") redirect("/time-entries");
+  if (current.role !== "admin") redirect("/weekly");
 
   const supabase = await createClient();
 

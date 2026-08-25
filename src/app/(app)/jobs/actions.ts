@@ -9,7 +9,7 @@ import { isValidJobName } from "@/lib/job-format";
 async function requireAdmin() {
   const current = await getCurrentUser();
   if (!current) redirect("/login");
-  if (current.role !== "admin") redirect("/time-entries");
+  if (current.role !== "admin") redirect("/weekly");
   return current;
 }
 

@@ -7,7 +7,7 @@ import { toCsv } from "@/lib/csv";
 export async function GET(request: Request) {
   const current = await getCurrentUser();
   if (!current) redirect("/login");
-  if (current.role !== "admin") redirect("/time-entries");
+  if (current.role !== "admin") redirect("/weekly");
 
   const { searchParams } = new URL(request.url);
   const month = searchParams.get("month") || currentMonth();

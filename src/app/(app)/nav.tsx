@@ -6,7 +6,6 @@ import { signOut } from "@/app/login/actions";
 import type { Role } from "@/lib/types";
 
 const links: { href: string; label: string; roles: Role[] }[] = [
-  { href: "/time-entries", label: "Log Time", roles: ["employee", "admin"] },
   { href: "/weekly", label: "Week Overview", roles: ["employee", "admin"] },
   { href: "/monthly", label: "Month Overview", roles: ["admin"] },
   { href: "/jobs", label: "Jobs", roles: ["admin"] },

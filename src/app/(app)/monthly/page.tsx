@@ -21,7 +21,7 @@ export default async function MonthlyPage({
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
-  if (current.role !== "admin") redirect("/time-entries");
+  if (current.role !== "admin") redirect("/weekly");
 
   const month = monthParam || currentMonth();
   const start = firstOfMonth(month);
