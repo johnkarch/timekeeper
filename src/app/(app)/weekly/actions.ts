@@ -95,3 +95,65 @@ export async function createTimeEntry(formData: FormData) {
   revalidatePath("/weekly");
   redirect(weeklyPath(week, { success: "1" }));
 }
+
+export async function updateTimeEntry(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const jobText = String(formData.get("job") ?? "").trim();
+  const entryDate = String(formData.get("entry_date") ?? "");
+  const hours = Number(formData.get("hours"));
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const week = String(formData.get("week") ?? "");
+
+  if (!entryDate || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
+    redirect(weeklyPath(week, { error: "Enter a valid date and hours (0–24)." }));
+  }
+
+  const job = await findActiveJobOrRedirect(jobText, week);
+
+  const { data, error } = await supabase
+    .from("time_entries")
+    .update({ job_id: job.id, entry_date: entryDate, hours, notes })
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    redirect(weeklyPath(week, { error: error.message }));
+  }
+  if (!data || data.length === 0) {
+    redirect(
+      weeklyPath(week, { error: "Couldn't save that entry — it may already be billed." })
+    );
+  }
+
+  revalidatePath("/weekly");
+  redirect(weeklyPath(week, { success: "1" }));
+}
+
+export async function deleteTimeEntry(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const week = String(formData.get("week") ?? "");
+
+  const { data, error } = await supabase.from("time_entries").delete().eq("id", id).select("id");
+
+  if (error) {
+    redirect(weeklyPath(week, { error: error.message }));
+  }
+  if (!data || data.length === 0) {
+    redirect(
+      weeklyPath(week, { error: "Couldn't delete that entry — it may already be billed." })
+    );
+  }
+
+  revalidatePath("/weekly");
+  redirect(weeklyPath(week, { success: "1" }));
+}

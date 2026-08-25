@@ -4,21 +4,18 @@ import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
 import { fetchOwnEntries } from "@/lib/own-entries";
 import NewEntryForm from "./new-entry-form";
+import EntryTile from "./entry-tile";
 import DismissibleBanner from "@/components/dismissible-banner";
-
-interface DayCell {
-  hours: number;
-  notes: string[];
-}
+import type { TimeEntryListItem } from "@/lib/types";
 
 interface JobWeekRow {
   job_name: string;
-  cells: DayCell[]; // Monday..Sunday
+  cells: TimeEntryListItem[][]; // Monday..Sunday, each day's list of entries for this job
   total: number;
 }
 
-function emptyWeek(): DayCell[] {
-  return Array.from({ length: 7 }, () => ({ hours: 0, notes: [] }));
+function emptyWeek(): TimeEntryListItem[][] {
+  return Array.from({ length: 7 }, () => []);
 }
 
 function weekLink(monday: string) {
@@ -41,13 +38,12 @@ export default async function WeeklyPage({
 
   const entries = await fetchOwnEntries(current.user.id, monday, sunday);
 
-  const jobCells = new Map<string, DayCell[]>();
+  const jobCells = new Map<string, TimeEntryListItem[][]>();
   for (const entry of entries) {
     const dayIndex = days.indexOf(entry.entry_date);
     if (dayIndex === -1) continue;
     const cells = jobCells.get(entry.job_name) ?? emptyWeek();
-    cells[dayIndex].hours += entry.hours;
-    if (entry.notes) cells[dayIndex].notes.push(entry.notes);
+    cells[dayIndex].push(entry);
     jobCells.set(entry.job_name, cells);
   }
 
@@ -55,11 +51,13 @@ export default async function WeeklyPage({
     .map(([job_name, cells]) => ({
       job_name,
       cells,
-      total: cells.reduce((sum, c) => sum + c.hours, 0),
+      total: cells.reduce((sum, day) => sum + day.reduce((s, e) => s + e.hours, 0), 0),
     }))
     .sort((a, b) => a.job_name.localeCompare(b.job_name));
 
-  const dayTotals = days.map((_, i) => gridRows.reduce((sum, row) => sum + row.cells[i].hours, 0));
+  const dayTotals = days.map((_, i) =>
+    gridRows.reduce((sum, row) => sum + row.cells[i].reduce((s, e) => s + e.hours, 0), 0)
+  );
   const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
 
   const exportParams = new URLSearchParams({ week: monday });
@@ -165,31 +163,19 @@ export default async function WeeklyPage({
                   className="border-b border-gray-100 last:border-0 hover:bg-gray-50/60"
                 >
                   <td className="px-4 py-2.5 font-medium text-gray-900">{row.job_name}</td>
-                  {row.cells.map((cell, i) => (
+                  {row.cells.map((dayEntries, i) => (
                     <td key={i} className={dayColClass(i, "px-2 py-2 text-right")}>
-                      {cell.hours > 0 ? (
-                        <div className="group relative inline-block">
-                          <span
-                            className={`inline-block min-w-10 rounded-md px-2 py-1 tabular-nums ${
-                              days[i] === todayStr
-                                ? "bg-blue-100 font-medium text-blue-900"
-                                : "bg-gray-100 text-gray-700"
-                            } ${cell.notes.length > 0 ? "cursor-help" : ""}`}
-                          >
-                            {cell.hours}
-                          </span>
-                          {cell.notes.length > 0 && (
-                            <div className="pointer-events-none absolute right-0 bottom-full z-10 mb-1 hidden w-56 rounded-md bg-gray-900 px-3 py-2 text-left text-xs font-normal text-white shadow-lg group-hover:block">
-                              {cell.notes.map((note, ni) => (
-                                <p
-                                  key={ni}
-                                  className={ni > 0 ? "mt-1.5 border-t border-white/20 pt-1.5" : ""}
-                                >
-                                  {note}
-                                </p>
-                              ))}
-                            </div>
-                          )}
+                      {dayEntries.length > 0 ? (
+                        <div className="flex flex-col items-end gap-1">
+                          {dayEntries.map((entry) => (
+                            <EntryTile
+                              key={entry.id}
+                              entry={entry}
+                              weekParam={monday}
+                              canEdit={current.role === "admin" || !entry.billed}
+                              highlight={days[i] === todayStr}
+                            />
+                          ))}
                         </div>
                       ) : (
                         <span className="text-gray-300">—</span>

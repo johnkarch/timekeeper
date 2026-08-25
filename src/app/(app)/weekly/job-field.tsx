@@ -4,7 +4,13 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { searchJobs } from "./actions";
 import type { Job } from "@/lib/types";
 
-export default function JobField({ defaultValue = "" }: { defaultValue?: string }) {
+export default function JobField({
+  id = "job",
+  defaultValue = "",
+}: {
+  id?: string;
+  defaultValue?: string;
+}) {
   const [text, setText] = useState(defaultValue);
   const [selected, setSelected] = useState<Job | null>(null);
   const [suggestions, setSuggestions] = useState<Job[]>([]);
@@ -60,11 +66,11 @@ export default function JobField({ defaultValue = "" }: { defaultValue?: string 
 
   return (
     <div className="relative">
-      <label htmlFor="job" className="mb-1 block text-sm font-medium text-gray-700">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-gray-700">
         Job
       </label>
       <input
-        id="job"
+        id={id}
         name="job"
         type="text"
         required
