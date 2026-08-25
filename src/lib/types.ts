@@ -33,10 +33,17 @@ export interface JobWithEntries {
   entries: JobEntry[];
 }
 
-export interface WeekSubmission {
+export interface JobHours {
+  job_name: string;
+  hours: number;
+}
+
+export interface SubmittedWeekSummary {
   id: string;
   user_id: string;
+  employee_name: string;
   week_start: string;
   submitted_at: string;
-  employee_name: string;
+  total_hours: number;
+  job_breakdown: JobHours[];
 }
