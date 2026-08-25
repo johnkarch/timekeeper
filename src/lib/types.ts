@@ -32,3 +32,11 @@ export interface JobWithEntries {
   notes: string | null;
   entries: JobEntry[];
 }
+
+export interface WeekSubmission {
+  id: string;
+  user_id: string;
+  week_start: string;
+  submitted_at: string;
+  employee_name: string;
+}

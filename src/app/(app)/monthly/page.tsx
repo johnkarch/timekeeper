@@ -62,7 +62,7 @@ export default async function MonthlyPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-500">Month Overview</p>
+          <p className="text-sm font-medium text-gray-500">Monthly Billing Overview</p>
           <h1 className="text-2xl font-semibold text-gray-900">{formatMonthLabel(month)}</h1>
         </div>
         <div className="flex items-center gap-2">

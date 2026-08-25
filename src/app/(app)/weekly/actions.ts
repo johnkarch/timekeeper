@@ -126,7 +126,9 @@ export async function updateTimeEntry(id: string, formData: FormData) {
   }
   if (!data || data.length === 0) {
     redirect(
-      weeklyPath(week, { error: "Couldn't save that entry — it may already be billed." })
+      weeklyPath(week, {
+        error: "Couldn't save that entry — it may already be billed or its week submitted.",
+      })
     );
   }
 
@@ -150,8 +152,34 @@ export async function deleteTimeEntry(id: string, formData: FormData) {
   }
   if (!data || data.length === 0) {
     redirect(
-      weeklyPath(week, { error: "Couldn't delete that entry — it may already be billed." })
+      weeklyPath(week, {
+        error: "Couldn't delete that entry — it may already be billed or its week submitted.",
+      })
     );
+  }
+
+  revalidatePath("/weekly");
+  redirect(weeklyPath(week, { success: "1" }));
+}
+
+export async function submitWeek(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const week = String(formData.get("week") ?? "");
+  if (!week) redirect(weeklyPath(week, { error: "Missing week." }));
+
+  const { error } = await supabase
+    .from("week_submissions")
+    .insert({ user_id: user.id, week_start: week });
+
+  // A unique-violation just means it's already submitted (e.g. a
+  // double-click) — treat that as a no-op rather than an error.
+  if (error && error.code !== "23505") {
+    redirect(weeklyPath(week, { error: error.message }));
   }
 
   revalidatePath("/weekly");

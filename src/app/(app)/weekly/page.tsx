@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
 import { fetchOwnEntries } from "@/lib/own-entries";
+import { fetchOwnSubmission } from "@/lib/week-submissions";
 import NewEntryForm from "./new-entry-form";
 import EntryTile from "./entry-tile";
+import SubmitWeekButton from "./submit-week-button";
 import DismissibleBanner from "@/components/dismissible-banner";
 import ExportMenu from "@/components/export-menu";
 import type { TimeEntryListItem } from "@/lib/types";
@@ -38,6 +40,12 @@ export default async function WeeklyPage({
   const sunday = days[6];
 
   const entries = await fetchOwnEntries(current.user.id, monday, sunday);
+  const submission = await fetchOwnSubmission(current.user.id, monday);
+  // This page only ever shows the viewer's own week, so the submitted lock
+  // applies the same regardless of role — an admin's own submitted week
+  // locks exactly like an employee's. Admins only bypass the lock when
+  // acting on someone else's entries, which never happens on this page.
+  const canAddOrEdit = !submission;
 
   const jobCells = new Map<string, TimeEntryListItem[][]>();
   for (const entry of entries) {
@@ -99,7 +107,7 @@ export default async function WeeklyPage({
       {success && <DismissibleBanner message="Saved." variant="success" />}
 
       <div className="flex flex-wrap items-start gap-3">
-        <NewEntryForm weekParam={monday} />
+        {canAddOrEdit && <NewEntryForm weekParam={monday} />}
 
         <form method="GET" className="flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
@@ -169,7 +177,7 @@ export default async function WeeklyPage({
                               key={entry.id}
                               entry={entry}
                               weekParam={monday}
-                              canEdit={current.role === "admin" || !entry.billed}
+                              canEdit={(!entry.billed || current.role === "admin") && !submission}
                               highlight={days[i] === todayStr}
                             />
                           ))}
@@ -210,6 +218,23 @@ export default async function WeeklyPage({
             </tfoot>
           )}
         </table>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        {submission ? (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-900">Submitted</span> for payroll on{" "}
+            {formatDateLabel(submission.submittedAt.slice(0, 10))} — only an admin can undo this.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-gray-500">
+              Done with this week? Submitting locks it from further edits until an admin undoes
+              it.
+            </p>
+            <SubmitWeekButton weekParam={monday} />
+          </div>
+        )}
       </div>
     </div>
   );

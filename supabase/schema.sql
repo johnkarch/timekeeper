@@ -200,7 +200,113 @@ create trigger time_entries_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- ============================================================================
--- 5. First admin
+-- 5. WEEK SUBMISSIONS (locks a week's entries pending payroll review)
+-- ============================================================================
+-- Presence of a row = that user's week is locked. There's deliberately no
+-- "unsubmit" self-service for employees — an admin deleting the row (via the
+-- Payroll page) is what undoes it, same spirit as the billed lock above.
+
+create table public.week_submissions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  week_start date not null, -- Monday of the submitted week
+  submitted_at timestamptz not null default now(),
+  unique (user_id, week_start)
+);
+
+create index week_submissions_week_idx on public.week_submissions (week_start);
+
+alter table public.week_submissions enable row level security;
+
+-- Employees see only their own submitted weeks; admins see everyone's.
+create policy "week_submissions: read own or read all if admin"
+  on public.week_submissions for select
+  using (user_id = auth.uid() or public.is_admin());
+
+-- Anyone can submit (lock) their own week.
+create policy "week_submissions: insert own"
+  on public.week_submissions for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+-- Only admins can undo a submission — no update policy exists because a
+-- submission is either present (locked) or gone (unlocked); there's nothing
+-- in between to edit.
+create policy "week_submissions: only admins can delete"
+  on public.week_submissions for delete
+  to authenticated
+  using (public.is_admin());
+
+grant select, insert, delete on public.week_submissions to authenticated;
+
+-- Helper used by the time_entries policies below: "has this user's week
+-- (the one containing p_date) been submitted?" security definer so it can
+-- read week_submissions regardless of the calling user's own RLS grant,
+-- same reasoning as is_admin() above.
+create function public.week_is_submitted(p_user_id uuid, p_date date)
+returns boolean
+language sql
+security definer set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.week_submissions
+    where user_id = p_user_id
+      and week_start = date_trunc('week', p_date)::date
+  );
+$$;
+
+-- Re-layer the time_entries write policies to also block a submitted week.
+-- The submitted-week lock applies to the row's OWNER regardless of role —
+-- an admin's own submitted week locks exactly like an employee's; admins
+-- only bypass it when acting on someone ELSE's row (existing cross-user
+-- admin powers, unchanged). The billed-lock's admin bypass on an admin's
+-- own rows is untouched — that's a separate, pre-existing exception.
+-- `drop policy if exists` makes this safe to run both on a fresh project and
+-- as an update against an existing one.
+drop policy if exists "time_entries: insert own" on public.time_entries;
+create policy "time_entries: insert own"
+  on public.time_entries for insert
+  to authenticated
+  with check (
+    (user_id = auth.uid() and not public.week_is_submitted(user_id, entry_date))
+    or (public.is_admin() and user_id <> auth.uid())
+  );
+
+drop policy if exists "time_entries: update own unbilled or admin" on public.time_entries;
+create policy "time_entries: update own unbilled or admin"
+  on public.time_entries for update
+  using (
+    (
+      user_id = auth.uid()
+      and not public.week_is_submitted(user_id, entry_date)
+      and (billed = false or public.is_admin())
+    )
+    or (public.is_admin() and user_id <> auth.uid())
+  )
+  with check (
+    (
+      user_id = auth.uid()
+      and not public.week_is_submitted(user_id, entry_date)
+      and (billed = false or public.is_admin())
+    )
+    or (public.is_admin() and user_id <> auth.uid())
+  );
+
+drop policy if exists "time_entries: delete own unbilled or admin" on public.time_entries;
+create policy "time_entries: delete own unbilled or admin"
+  on public.time_entries for delete
+  using (
+    (
+      user_id = auth.uid()
+      and not public.week_is_submitted(user_id, entry_date)
+      and (billed = false or public.is_admin())
+    )
+    or (public.is_admin() and user_id <> auth.uid())
+  );
+
+-- ============================================================================
+-- 6. First admin
 -- ============================================================================
 -- New users default to 'employee' and only an existing admin can promote
 -- someone else — but that means the very first admin has to be set by hand.
@@ -217,5 +323,5 @@ create trigger time_entries_set_updated_at
 -- schema later, either write a new migration file with ALTER TABLE
 -- statements, or drop everything first with:
 --
--- drop table if exists public.time_entries, public.jobs, public.profiles cascade;
--- drop function if exists public.handle_new_user, public.is_admin, public.set_updated_at cascade;
+-- drop table if exists public.time_entries, public.jobs, public.profiles, public.week_submissions cascade;
+-- drop function if exists public.handle_new_user, public.is_admin, public.set_updated_at, public.week_is_submitted cascade;
