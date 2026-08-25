@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createJob } from "./actions";
 import JobListTable from "./job-list-table";
+import DismissibleBanner from "@/components/dismissible-banner";
 import type { JobWithEntries } from "@/lib/types";
 
 interface JobRow {
@@ -87,8 +88,8 @@ export default async function JobsPage({
         <p className="text-sm text-gray-500">Add jobs, rename them, or mark them inactive.</p>
       </div>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {success && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">Saved.</p>}
+      {error && <DismissibleBanner message={error} variant="error" />}
+      {success && <DismissibleBanner message="Saved." variant="success" />}
 
       <div className="space-y-2">
         <h2 className="text-base font-bold text-gray-900">Add Job</h2>

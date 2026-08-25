@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { login } from "./actions";
+import DismissibleBanner from "@/components/dismissible-banner";
 
 export default async function LoginPage({
   searchParams,
@@ -21,9 +22,7 @@ export default async function LoginPage({
         <h1 className="mb-1 text-xl font-semibold text-gray-900">Timekeeper</h1>
         <p className="mb-6 text-sm text-gray-500">Sign in to log and review time.</p>
 
-        {error && (
-          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        )}
+        {error && <DismissibleBanner message={error} variant="error" className="mb-4" />}
 
         <form action={login} className="space-y-4">
           <div>

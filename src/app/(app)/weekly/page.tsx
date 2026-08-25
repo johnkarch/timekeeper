@@ -2,59 +2,72 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
-import { fetchWeeklyEntries, fetchEmployeeOptions } from "@/lib/weekly-entries";
-import JobSearchField from "@/app/(app)/job-search-field";
+import { fetchOwnEntries } from "@/lib/own-entries";
 
-function weekLink(monday: string, employee?: string, q?: string) {
-  const params = new URLSearchParams({ week: monday });
-  if (employee) params.set("employee", employee);
-  if (q) params.set("q", q);
-  return `/weekly?${params.toString()}`;
+interface DayCell {
+  hours: number;
+  notes: string[];
+}
+
+interface JobWeekRow {
+  job_name: string;
+  cells: DayCell[]; // Monday..Sunday
+  total: number;
+}
+
+function emptyWeek(): DayCell[] {
+  return Array.from({ length: 7 }, () => ({ hours: 0, notes: [] }));
+}
+
+function weekLink(monday: string) {
+  return `/weekly?week=${monday}`;
 }
 
 export default async function WeeklyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; employee?: string; q?: string }>;
+  searchParams: Promise<{ week?: string }>;
 }) {
-  const { week, employee, q } = await searchParams;
+  const { week } = await searchParams;
 
   const current = await getCurrentUser();
   if (!current) redirect("/login");
-  const { role } = current;
 
   const monday = mondayOf(week || todayISO());
-  const sunday = addDays(monday, 6);
-  const prevMonday = addDays(monday, -7);
-  const nextMonday = addDays(monday, 7);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const sunday = days[6];
 
-  const adminEmployee = role === "admin" ? employee : undefined;
-  const adminQ = role === "admin" ? q : undefined;
+  const entries = await fetchOwnEntries(current.user.id, monday, sunday);
 
-  const entries = await fetchWeeklyEntries(role, {
-    monday,
-    sunday,
-    employeeId: adminEmployee,
-    q: adminQ,
-  });
-  const employees = role === "admin" ? await fetchEmployeeOptions() : [];
-
-  const totalHours = entries.reduce((sum, e) => sum + e.hours, 0);
-
-  const byJob = new Map<string, { job_name: string; hours: number }>();
-  for (const e of entries) {
-    const existing = byJob.get(e.job_name);
-    if (existing) {
-      existing.hours += e.hours;
-    } else {
-      byJob.set(e.job_name, { job_name: e.job_name, hours: e.hours });
-    }
+  const jobCells = new Map<string, DayCell[]>();
+  for (const entry of entries) {
+    const dayIndex = days.indexOf(entry.entry_date);
+    if (dayIndex === -1) continue;
+    const cells = jobCells.get(entry.job_name) ?? emptyWeek();
+    cells[dayIndex].hours += entry.hours;
+    if (entry.notes) cells[dayIndex].notes.push(entry.notes);
+    jobCells.set(entry.job_name, cells);
   }
-  const jobSubtotals = Array.from(byJob.values()).sort((a, b) => a.job_name.localeCompare(b.job_name));
+
+  const gridRows: JobWeekRow[] = Array.from(jobCells.entries())
+    .map(([job_name, cells]) => ({
+      job_name,
+      cells,
+      total: cells.reduce((sum, c) => sum + c.hours, 0),
+    }))
+    .sort((a, b) => a.job_name.localeCompare(b.job_name));
+
+  const dayTotals = days.map((_, i) => gridRows.reduce((sum, row) => sum + row.cells[i].hours, 0));
+  const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
 
   const exportParams = new URLSearchParams({ week: monday });
-  if (adminEmployee) exportParams.set("employee", adminEmployee);
-  if (adminQ) exportParams.set("q", adminQ);
+  const todayStr = todayISO();
+
+  function dayColClass(i: number, base: string) {
+    if (days[i] === todayStr) return `${base} bg-blue-50`;
+    if (i === 5 || i === 6) return `${base} bg-gray-50/70`;
+    return base;
+  }
 
   return (
     <div className="space-y-6">
@@ -67,13 +80,13 @@ export default async function WeeklyPage({
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href={weekLink(prevMonday, adminEmployee, adminQ)}
+            href={weekLink(addDays(monday, -7))}
             className="rounded-md border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
           >
             ← Prev week
           </Link>
           <Link
-            href={weekLink(nextMonday, adminEmployee, adminQ)}
+            href={weekLink(addDays(monday, 7))}
             className="rounded-md border border-blue-600 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
           >
             Next week →
@@ -97,29 +110,6 @@ export default async function WeeklyPage({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
-        {role === "admin" && (
-          <>
-            <div>
-              <label htmlFor="employee" className="mb-1 block text-sm font-medium text-gray-700">
-                Employee
-              </label>
-              <select
-                id="employee"
-                name="employee"
-                defaultValue={adminEmployee ?? ""}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">All employees</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <JobSearchField defaultValue={adminQ ?? ""} />
-          </>
-        )}
         <button
           type="submit"
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -134,61 +124,103 @@ export default async function WeeklyPage({
         </a>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-gray-500">
+          <thead className="border-b border-gray-200 bg-gray-50 text-gray-500">
             <tr>
-              <th className="px-4 py-2 font-medium">Date</th>
-              {role === "admin" && <th className="px-4 py-2 font-medium">Employee</th>}
-              <th className="px-4 py-2 font-medium">Job</th>
-              <th className="px-4 py-2 font-medium">Hours</th>
-              <th className="px-4 py-2 font-medium">Notes</th>
-              <th className="px-4 py-2 font-medium">Billed</th>
+              <th className="px-4 py-3 font-medium">Job</th>
+              {days.map((day, i) => (
+                <th
+                  key={day}
+                  className={dayColClass(
+                    i,
+                    `px-4 py-3 text-right font-medium whitespace-nowrap ${
+                      days[i] === todayStr ? "text-blue-700" : ""
+                    }`
+                  )}
+                >
+                  {formatDateLabel(day)}
+                </th>
+              ))}
+              <th className="border-l border-gray-200 px-4 py-3 text-right font-medium">Total</th>
             </tr>
           </thead>
           <tbody>
-            {entries.length === 0 ? (
+            {gridRows.length === 0 ? (
               <tr>
-                <td colSpan={role === "admin" ? 6 : 5} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                   No entries this week.
                 </td>
               </tr>
             ) : (
-              entries.map((e) => (
-                <tr key={e.id} className="border-b border-gray-100 last:border-0">
-                  <td className="px-4 py-2">{e.entry_date}</td>
-                  {role === "admin" && <td className="px-4 py-2">{e.employee_name}</td>}
-                  <td className="px-4 py-2">{e.job_name}</td>
-                  <td className="px-4 py-2">{e.hours}</td>
-                  <td className="px-4 py-2 text-gray-500">{e.notes ?? ""}</td>
-                  <td className="px-4 py-2">{e.billed ? "Yes" : "No"}</td>
+              gridRows.map((row) => (
+                <tr
+                  key={row.job_name}
+                  className="border-b border-gray-100 last:border-0 hover:bg-gray-50/60"
+                >
+                  <td className="px-4 py-2.5 font-medium text-gray-900">{row.job_name}</td>
+                  {row.cells.map((cell, i) => (
+                    <td key={i} className={dayColClass(i, "px-2 py-2 text-right")}>
+                      {cell.hours > 0 ? (
+                        <div className="group relative inline-block">
+                          <span
+                            className={`inline-block min-w-10 rounded-md px-2 py-1 tabular-nums ${
+                              days[i] === todayStr
+                                ? "bg-blue-100 font-medium text-blue-900"
+                                : "bg-gray-100 text-gray-700"
+                            } ${cell.notes.length > 0 ? "cursor-help" : ""}`}
+                          >
+                            {cell.hours}
+                          </span>
+                          {cell.notes.length > 0 && (
+                            <div className="pointer-events-none absolute right-0 bottom-full z-10 mb-1 hidden w-56 rounded-md bg-gray-900 px-3 py-2 text-left text-xs font-normal text-white shadow-lg group-hover:block">
+                              {cell.notes.map((note, ni) => (
+                                <p
+                                  key={ni}
+                                  className={ni > 0 ? "mt-1.5 border-t border-white/20 pt-1.5" : ""}
+                                >
+                                  {note}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                  ))}
+                  <td className="border-l border-gray-200 px-4 py-2.5 text-right font-medium tabular-nums text-gray-900">
+                    {row.total}
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
-        </table>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-900">Subtotal by job</h2>
-          {jobSubtotals.length === 0 ? (
-            <p className="text-sm text-gray-500">No entries this week.</p>
-          ) : (
-            <ul className="space-y-1 text-sm">
-              {jobSubtotals.map((j) => (
-                <li key={j.job_name} className="flex justify-between">
-                  <span>{j.job_name}</span>
-                  <span className="font-medium">{j.hours}h</span>
-                </li>
-              ))}
-            </ul>
+          {gridRows.length > 0 && (
+            <tfoot className="border-t border-gray-200 bg-gray-50 font-medium text-gray-900">
+              <tr>
+                <td className="px-4 py-2.5">Total</td>
+                {dayTotals.map((t, i) => (
+                  <td
+                    key={i}
+                    className={dayColClass(
+                      i,
+                      `px-4 py-2.5 text-right tabular-nums ${
+                        days[i] === todayStr ? "text-blue-900" : ""
+                      }`
+                    )}
+                  >
+                    {t > 0 ? t : "—"}
+                  </td>
+                ))}
+                <td className="border-l border-gray-200 px-4 py-2.5 text-right tabular-nums">
+                  {grandTotal}
+                </td>
+              </tr>
+            </tfoot>
           )}
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-900">Total for week</h2>
-          <p className="text-2xl font-semibold text-gray-900">{totalHours}h</p>
-        </div>
+        </table>
       </div>
     </div>
   );

@@ -15,21 +15,6 @@ export interface TimeEntryListItem {
   job_name: string;
 }
 
-export interface WeeklyEntry {
-  id: string;
-  entry_date: string;
-  hours: number;
-  notes: string | null;
-  billed: boolean;
-  job_name: string;
-  employee_name: string;
-}
-
-export interface EmployeeOption {
-  id: string;
-  label: string;
-}
-
 export interface JobEntry {
   id: string;
   entry_date: string;
