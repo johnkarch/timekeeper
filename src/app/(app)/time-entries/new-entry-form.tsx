@@ -1,16 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { createTimeEntry } from "./actions";
 import JobField from "./job-field";
 import { todayISO } from "@/lib/dates";
 
-export default function NewEntryForm({ weekParam }: { weekParam: string }) {
+export default function NewEntryForm() {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      >
+        + Add Entry
+      </button>
+    );
+  }
+
   return (
     <form
       action={createTimeEntry}
       className="grid gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2"
     >
-      <input type="hidden" name="week" value={weekParam} />
       <JobField />
       <div>
         <label htmlFor="entry_date" className="mb-1 block text-sm font-medium text-gray-700">
@@ -21,6 +35,7 @@ export default function NewEntryForm({ weekParam }: { weekParam: string }) {
           name="entry_date"
           type="date"
           required
+          autoFocus
           defaultValue={todayISO()}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
         />
@@ -51,12 +66,19 @@ export default function NewEntryForm({ weekParam }: { weekParam: string }) {
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
         />
       </div>
-      <div className="sm:col-span-2">
+      <div className="flex gap-2 sm:col-span-2">
         <button
           type="submit"
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Add entry
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
         </button>
       </div>
     </form>

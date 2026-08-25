@@ -25,20 +25,16 @@ export async function searchJobs(text: string): Promise<Job[]> {
   return data ?? [];
 }
 
-// Redirects back to /time-entries, preserving whichever week the user was
-// viewing so an add/edit/delete doesn't silently bounce them back to the
-// current week.
-function timeEntriesPath(week: string, extra: Record<string, string> = {}) {
+function timeEntriesPath(extra: Record<string, string> = {}) {
   const params = new URLSearchParams(extra);
-  if (week) params.set("week", week);
   const qs = params.toString();
   return qs ? `/time-entries?${qs}` : "/time-entries";
 }
 
-async function findActiveJobOrRedirect(jobText: string, week: string) {
+async function findActiveJobOrRedirect(jobText: string) {
   const trimmed = jobText.trim();
   if (!trimmed) {
-    redirect(timeEntriesPath(week, { error: "Choose a job." }));
+    redirect(timeEntriesPath({ error: "Choose a job." }));
   }
 
   const supabase = await createClient();
@@ -50,13 +46,13 @@ async function findActiveJobOrRedirect(jobText: string, week: string) {
 
   if (!job) {
     redirect(
-      timeEntriesPath(week, {
+      timeEntriesPath({
         error: "No job found matching that text — pick one from the dropdown.",
       })
     );
   }
   if (!job.is_active) {
-    redirect(timeEntriesPath(week, { error: "That job is marked inactive." }));
+    redirect(timeEntriesPath({ error: "That job is marked inactive." }));
   }
 
   return job;
@@ -67,13 +63,12 @@ function parseEntryFields(formData: FormData) {
   const entryDate = String(formData.get("entry_date") ?? "");
   const hours = Number(formData.get("hours"));
   const notes = String(formData.get("notes") ?? "").trim() || null;
-  const week = String(formData.get("week") ?? "");
-  return { jobText, entryDate, hours, notes, week };
+  return { jobText, entryDate, hours, notes };
 }
 
-function validateDateAndHours(entryDate: string, hours: number, week: string) {
+function validateDateAndHours(entryDate: string, hours: number) {
   if (!entryDate || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
-    redirect(timeEntriesPath(week, { error: "Enter a valid date and hours (0–24)." }));
+    redirect(timeEntriesPath({ error: "Enter a valid date and hours (0–24)." }));
   }
 }
 
@@ -84,9 +79,9 @@ export async function createTimeEntry(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { jobText, entryDate, hours, notes, week } = parseEntryFields(formData);
-  validateDateAndHours(entryDate, hours, week);
-  const job = await findActiveJobOrRedirect(jobText, week);
+  const { jobText, entryDate, hours, notes } = parseEntryFields(formData);
+  validateDateAndHours(entryDate, hours);
+  const job = await findActiveJobOrRedirect(jobText);
 
   const { error } = await supabase.from("time_entries").insert({
     user_id: user.id,
@@ -97,41 +92,9 @@ export async function createTimeEntry(formData: FormData) {
   });
 
   if (error) {
-    redirect(timeEntriesPath(week, { error: error.message }));
+    redirect(timeEntriesPath({ error: error.message }));
   }
 
   revalidatePath("/time-entries");
-  redirect(timeEntriesPath(week, { success: "1" }));
-}
-
-export async function updateTimeEntry(id: string, formData: FormData) {
-  const supabase = await createClient();
-
-  const { jobText, entryDate, hours, notes, week } = parseEntryFields(formData);
-  validateDateAndHours(entryDate, hours, week);
-  const job = await findActiveJobOrRedirect(jobText, week);
-
-  const { error } = await supabase
-    .from("time_entries")
-    .update({ job_id: job.id, entry_date: entryDate, hours, notes })
-    .eq("id", id);
-
-  if (error) {
-    redirect(timeEntriesPath(week, { error: error.message }));
-  }
-
-  revalidatePath("/time-entries");
-  redirect(timeEntriesPath(week, { success: "1" }));
-}
-
-export async function deleteTimeEntry(id: string, formData: FormData) {
-  const week = String(formData.get("week") ?? "");
-  const supabase = await createClient();
-  const { error } = await supabase.from("time_entries").delete().eq("id", id);
-
-  if (error) {
-    redirect(timeEntriesPath(week, { error: error.message }));
-  }
-
-  revalidatePath("/time-entries");
+  redirect(timeEntriesPath({ success: "1" }));
 }
