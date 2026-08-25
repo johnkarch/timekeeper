@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { login } from "./actions";
@@ -6,7 +7,7 @@ import DismissibleBanner from "@/components/dismissible-banner";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; success?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -14,7 +15,7 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
   if (user) redirect("/weekly");
 
-  const { error } = await searchParams;
+  const { error, success } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-4">
@@ -23,6 +24,13 @@ export default async function LoginPage({
         <p className="mb-6 text-sm text-gray-500">Sign in to log and review time.</p>
 
         {error && <DismissibleBanner message={error} variant="error" className="mb-4" />}
+        {success && (
+          <DismissibleBanner
+            message="Password updated — sign in with your new password."
+            variant="success"
+            className="mb-4"
+          />
+        )}
 
         <form action={login} className="space-y-4">
           <div>
@@ -39,9 +47,14 @@ export default async function LoginPage({
             />
           </div>
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               name="password"
