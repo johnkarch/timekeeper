@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { addMonths, currentMonth, firstOfMonth, formatMonthLabel } from "@/lib/dates";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import JobSearchField from "@/app/(app)/job-search-field";
+import ExportMenu from "@/components/export-menu";
 
 function monthLink(month: string, billed?: string, q?: string) {
   const params = new URLSearchParams({ month });
@@ -53,9 +54,9 @@ export default async function MonthlyPage({
   );
   const totalUnbilledHours = unbilledEntries.reduce((sum, e) => sum + e.hours, 0);
 
-  const exportParams = new URLSearchParams({ month });
-  if (billedFilter) exportParams.set("billed", billedFilter);
-  if (q) exportParams.set("q", q);
+  const exportParams: Record<string, string> = { month };
+  if (billedFilter) exportParams.billed = billedFilter;
+  if (q) exportParams.q = q;
 
   return (
     <div className="space-y-6">
@@ -118,12 +119,7 @@ export default async function MonthlyPage({
         >
           Apply
         </button>
-        <a
-          href={`/api/export/monthly?${exportParams.toString()}`}
-          className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-        >
-          Export CSV
-        </a>
+        <ExportMenu basePath="/api/export/monthly" params={exportParams} />
       </form>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">

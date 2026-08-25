@@ -6,6 +6,7 @@ import { fetchOwnEntries } from "@/lib/own-entries";
 import NewEntryForm from "./new-entry-form";
 import EntryTile from "./entry-tile";
 import DismissibleBanner from "@/components/dismissible-banner";
+import ExportMenu from "@/components/export-menu";
 import type { TimeEntryListItem } from "@/lib/types";
 
 interface JobWeekRow {
@@ -60,7 +61,7 @@ export default async function WeeklyPage({
   );
   const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
 
-  const exportParams = new URLSearchParams({ week: monday });
+  const exportParams = { week: monday };
   const todayStr = todayISO();
 
   function dayColClass(i: number, base: string) {
@@ -119,13 +120,9 @@ export default async function WeeklyPage({
           >
             Apply
           </button>
-          <a
-            href={`/api/export/weekly?${exportParams.toString()}`}
-            className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-          >
-            Export CSV
-          </a>
         </form>
+
+        <ExportMenu basePath="/api/export/weekly" params={exportParams} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">

@@ -75,9 +75,20 @@ export default function EntryTile({
     };
   }, [open]);
 
-  const tileClasses = `inline-block min-w-10 rounded-md px-2 py-1 tabular-nums ${
+  const tileClasses = `inline-flex w-28 min-h-14 flex-col justify-between rounded-md px-3 py-2 tabular-nums ${
     highlight ? "bg-blue-100 font-medium text-blue-900" : "bg-gray-100 text-gray-700"
   }`;
+
+  const tileContent = (
+    <>
+      <span className="block w-full text-right text-sm">{entry.hours} hrs</span>
+      {entry.notes && (
+        <span className="mt-1 w-full text-left text-xs leading-snug font-normal text-current/80 line-clamp-2">
+          {entry.notes}
+        </span>
+      )}
+    </>
+  );
 
   if (!canEdit) {
     return (
@@ -85,7 +96,7 @@ export default function EntryTile({
         className={`${tileClasses} cursor-not-allowed opacity-80`}
         title="Billed entries can't be edited here."
       >
-        {entry.hours}
+        {tileContent}
       </span>
     );
   }
@@ -97,9 +108,9 @@ export default function EntryTile({
         type="button"
         onClick={() => (open ? setOpen(false) : openPanel())}
         title={entry.notes ?? undefined}
-        className={`${tileClasses} cursor-pointer hover:ring-2 hover:ring-blue-300`}
+        className={`${tileClasses} cursor-pointer text-left hover:ring-2 hover:ring-blue-300`}
       >
-        {entry.hours}
+        {tileContent}
       </button>
 
       {open &&

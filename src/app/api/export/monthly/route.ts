@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { addMonths, currentMonth, firstOfMonth } from "@/lib/dates";
+import { addMonths, currentMonth, firstOfMonth, formatMonthLabel } from "@/lib/dates";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import { toCsv } from "@/lib/csv";
+import { buildXlsx } from "@/lib/xlsx";
+import { buildPdf } from "@/lib/pdf";
+
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const current = await getCurrentUser();
@@ -14,6 +18,8 @@ export async function GET(request: Request) {
   const billedParam = searchParams.get("billed");
   const billed = billedParam === "billed" || billedParam === "unbilled" ? billedParam : undefined;
   const q = searchParams.get("q") ?? undefined;
+  const formatParam = searchParams.get("format");
+  const format = formatParam === "xlsx" || formatParam === "pdf" ? formatParam : "csv";
 
   const start = firstOfMonth(month);
   const end = firstOfMonth(addMonths(month, 1));
@@ -30,12 +36,34 @@ export async function GET(request: Request) {
     e.billed ? "Yes" : "No",
   ]);
 
+  const filename = `monthly-${month}`;
+
+  if (format === "xlsx") {
+    const buffer = await buildXlsx("Monthly", header, rows);
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}.xlsx"`,
+      },
+    });
+  }
+
+  if (format === "pdf") {
+    const buffer = await buildPdf(formatMonthLabel(month), header, rows);
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}.pdf"`,
+      },
+    });
+  }
+
   const csv = toCsv([header, ...rows]);
 
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="monthly-${month}.csv"`,
+      "Content-Disposition": `attachment; filename="${filename}.csv"`,
     },
   });
 }
