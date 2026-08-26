@@ -86,20 +86,25 @@ export default function JobBlock({
               Cancel
             </button>
           </form>
-          <form
-            action={deleteJob.bind(null, job.id)}
-            onSubmit={(e) => {
-              if (!confirm(`Delete "${job.name}"? This can't be undone.`)) e.preventDefault();
-            }}
-            className="mt-2"
-          >
-            <SubmitButton
-              pendingLabel="Deleting…"
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+          <div className="mt-2 flex items-center gap-2">
+            <form action={deleteJob.bind(null, job.id)}
+              onSubmit={(e) => {
+                if (!confirm(`Delete "${job.name}"? This can't be undone.`)) e.preventDefault();
+              }}
             >
-              Delete job
-            </SubmitButton>
-          </form>
+              <SubmitButton
+                pendingLabel="Deleting…"
+                className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                Delete job
+              </SubmitButton>
+            </form>
+            <form action={setJobActive.bind(null, job.id, !job.is_active)}>
+              <SubmitButton className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                {job.is_active ? "Deactivate" : "Activate"}
+              </SubmitButton>
+            </form>
+          </div>
         </td>
       </tr>
     );
@@ -107,7 +112,11 @@ export default function JobBlock({
 
   return (
     <>
-      <tr className="border-b border-gray-100 bg-gray-50/60 font-medium text-gray-900">
+      <tr
+        className={`border-b border-gray-100 font-medium text-gray-900 ${
+          job.is_active ? "bg-teal-50" : "bg-gray-100"
+        }`}
+      >
         <td className="px-3 py-2">
           <input
             ref={checkboxRef}
@@ -118,20 +127,14 @@ export default function JobBlock({
             aria-label={`Select all entries for ${job.name}`}
           />
         </td>
-        <td className="px-2 py-2 whitespace-nowrap">
+        <td className="overflow-hidden px-2 py-2">
           <button
             type="button"
             onClick={onToggleExpand}
-            className="flex items-center gap-2 text-left hover:underline"
+            className="flex w-full min-w-0 items-center gap-2 text-left hover:underline"
           >
-            <span className="text-gray-400">{isExpanded ? "▾" : "▸"}</span>
-            <span>{job.name}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                job.is_active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
-              }`}
-            >
-              {job.is_active ? "Active" : "Inactive"}
+            <span className="min-w-0 truncate" title={job.name}>
+              {job.name}
             </span>
           </button>
         </td>
@@ -141,24 +144,19 @@ export default function JobBlock({
         <td className="px-4 py-2 whitespace-nowrap">
           {formatDateLabel(job.created_at.slice(0, 10))}
         </td>
-        <td className="px-4 py-2 text-gray-400">—</td>
+        <td className="px-2 py-2 text-gray-400">—</td>
         <td className="px-4 py-2 text-right text-gray-400">—</td>
-        <td className="px-4 py-2 text-gray-600">{job.notes || "—"}</td>
+        <td className="truncate px-4 py-2 text-gray-600" title={job.notes ?? undefined}>
+          {job.notes || "—"}
+        </td>
         <td className="px-4 py-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Edit
-            </button>
-            <form action={setJobActive.bind(null, job.id, !job.is_active)}>
-              <SubmitButton className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                {job.is_active ? "Deactivate" : "Activate"}
-              </SubmitButton>
-            </form>
-          </div>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Edit
+          </button>
         </td>
       </tr>
 
@@ -175,12 +173,16 @@ export default function JobBlock({
             </td>
             <td></td>
             <td className="px-4 py-2">{entry.billed ? "Yes" : "No"}</td>
-            <td className="px-4 py-2">{entry.employee_name}</td>
+            <td className="truncate px-4 py-2" title={entry.employee_name}>
+              {entry.employee_name}
+            </td>
             <td className="px-4 py-2 text-right">{entry.hours}</td>
             <td className="px-4 py-2 whitespace-nowrap">{formatDateLabel(entry.entry_date)}</td>
-            <td className="px-4 py-2 text-gray-400">—</td>
+            <td className="px-2 py-2 text-gray-400">—</td>
             <td className="px-4 py-2 text-right text-gray-400">—</td>
-            <td className="px-4 py-2">{entry.notes || "—"}</td>
+            <td className="truncate px-4 py-2" title={entry.notes ?? undefined}>
+              {entry.notes || "—"}
+            </td>
             <td></td>
           </tr>
         ))}
