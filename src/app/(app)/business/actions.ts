@@ -29,49 +29,27 @@ export async function addBillRate(formData: FormData) {
 
   const userId = String(formData.get("user_id") ?? "");
   const rate = Number(formData.get("rate"));
+  const effectiveDate = String(formData.get("effective_date") ?? "");
 
   if (!userId) fail("Choose an employee.");
   if (!Number.isFinite(rate) || rate < 0) fail("Enter a valid rate.");
+  if (!effectiveDate) fail("Choose an effective date.");
 
   const supabase = await createClient();
-  const { error } = await supabase.from("bill_rates").insert({ user_id: userId, rate });
+  const { error } = await supabase
+    .from("bill_rates")
+    .insert({ user_id: userId, rate, effective_date: effectiveDate });
 
   if (error) {
     fail(
       error.code === "23505"
-        ? "A rate already exists for that employee — edit it below instead."
+        ? "A bill rate already exists for that employee on that date."
         : error.message
     );
   }
 
   revalidatePath("/business");
   succeed();
-}
-
-export async function updateBillRate(id: string, formData: FormData) {
-  await requireAdmin();
-
-  const rate = Number(formData.get("rate"));
-  if (!Number.isFinite(rate) || rate < 0) fail("Enter a valid rate.");
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("bill_rates").update({ rate }).eq("id", id);
-
-  if (error) fail(error.message);
-
-  revalidatePath("/business");
-  succeed();
-}
-
-export async function deleteBillRate(id: string) {
-  await requireAdmin();
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("bill_rates").delete().eq("id", id);
-
-  if (error) fail(error.message);
-
-  revalidatePath("/business");
 }
 
 // ----------------------------------------------------------------------------

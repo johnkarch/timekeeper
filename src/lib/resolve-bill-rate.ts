@@ -1,0 +1,16 @@
+import type { BillRate } from "@/lib/types";
+
+// Pure — kept out of bill-rates.ts (which imports the server-only Supabase
+// client) so client components can resolve a rate without dragging that
+// import into the browser bundle.
+//
+// The rate in effect on a given date is whichever row has the most recent
+// effective_date that isn't after it — a later rate change never
+// retroactively changes what earlier, unbilled work is worth.
+export function resolveBillRate(rates: BillRate[], userId: string, asOf: string): number | null {
+  const applicable = rates
+    .filter((r) => r.user_id === userId && r.effective_date <= asOf)
+    .sort((a, b) => b.effective_date.localeCompare(a.effective_date));
+
+  return applicable.length > 0 ? applicable[0].rate : null;
+}

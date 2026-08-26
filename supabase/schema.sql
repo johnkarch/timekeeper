@@ -576,6 +576,32 @@ alter table public.time_entries drop column if exists work_type_id;
 drop table if exists public.work_types cascade;
 
 -- ============================================================================
+-- 12. Make bill rates effective-dated, like wage rates
+-- ============================================================================
+-- A bill rate change shouldn't retroactively change what earlier, unbilled
+-- work is worth — hours logged on a date resolve against whichever rate was
+-- actually in effect on that date, not just "whatever the current rate is."
+-- Existing rows get today's date as their effective_date (a reasonable
+-- "this is the rate as of right now" starting point); nothing is deleted.
+alter table public.bill_rates add column if not exists effective_date date;
+update public.bill_rates set effective_date = current_date where effective_date is null;
+alter table public.bill_rates alter column effective_date set not null;
+
+drop index if exists public.bill_rates_user_id_unique_idx;
+create unique index if not exists bill_rates_user_id_effective_date_unique_idx
+  on public.bill_rates (user_id, effective_date);
+
+-- Append-only from here on, same as wage_rates — a wrong rate is fixed by
+-- inserting a correcting row with the right effective_date, not by editing
+-- or deleting history. Drop the now-pointless updated_at plumbing too.
+drop trigger if exists bill_rates_set_updated_at on public.bill_rates;
+alter table public.bill_rates drop column if exists updated_at;
+
+drop policy if exists "bill_rates: only admins can update" on public.bill_rates;
+drop policy if exists "bill_rates: only admins can delete" on public.bill_rates;
+revoke update, delete on public.bill_rates from authenticated;
+
+-- ============================================================================
 -- Re-running this file
 -- ============================================================================
 -- This script only works on a clean project. If you need to change the

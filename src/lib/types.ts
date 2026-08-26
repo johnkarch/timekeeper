@@ -74,6 +74,7 @@ export interface BillRate {
   id: string;
   user_id: string;
   rate: number;
+  effective_date: string;
 }
 
 export interface WageRate {

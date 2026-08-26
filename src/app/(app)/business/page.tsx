@@ -6,7 +6,7 @@ import { fetchBillRates } from "@/lib/bill-rates";
 import { fetchWageRates } from "@/lib/wage-rates";
 import { fetchPtoAdjustments, fetchPtoBalances } from "@/lib/pto";
 import { fetchEmployeeStatistics } from "@/lib/employee-statistics";
-import BillRatesSection from "./bill-rates-section";
+import BillRatesPanel from "./bill-rates-panel";
 import WageRatesPanel from "./wage-rates-panel";
 import PtoPanel from "./pto-panel";
 import EmployeeStatisticsPanel from "./employee-statistics-panel";
@@ -58,7 +58,7 @@ export default async function BusinessManagementPage({
       {error && <DismissibleBanner message={error} variant="error" />}
       {success && <DismissibleBanner message="Saved." variant="success" />}
 
-      <BillRatesSection billRates={billRates} employees={employees} />
+      <BillRatesPanel billRates={billRates} employees={employees} />
 
       <WageRatesPanel employees={employees} wageRates={wageRates} />
 
