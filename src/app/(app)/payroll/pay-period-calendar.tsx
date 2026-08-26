@@ -85,7 +85,7 @@ export default async function PayPeriodCalendar({
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50 text-gray-500">
+          <thead className="border-b border-gray-200 bg-[#3d8f86] text-white">
             <tr>
               <th className="px-3 py-2 font-medium whitespace-nowrap">Employee</th>
               {days.map((day, i) => {

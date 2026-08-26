@@ -45,30 +45,30 @@ export default function SubmittedWeekRow({
           <td colSpan={colCount - 1} className="px-4 py-3">
             <div className="space-y-3">
               <table className="w-full max-w-sm text-left text-sm">
-                <thead className="text-gray-500">
+                <thead className="bg-[#3d8f86] text-white">
                   <tr>
-                    <th className="py-1 font-medium">Job</th>
-                    <th className="py-1 text-right font-medium">Hours</th>
+                    <th className="px-2 py-1 font-medium">Job</th>
+                    <th className="px-2 py-1 text-right font-medium">Hours</th>
                   </tr>
                 </thead>
                 <tbody>
                   {week.job_breakdown.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="py-1 text-gray-400">
+                      <td colSpan={2} className="px-2 py-1 text-gray-400">
                         No entries.
                       </td>
                     </tr>
                   ) : (
                     week.job_breakdown.map((j) => (
                       <tr key={j.job_name} className="border-t border-gray-200">
-                        <td className="py-1">{j.job_name}</td>
-                        <td className="py-1 text-right tabular-nums">{j.hours}</td>
+                        <td className="px-2 py-1">{j.job_name}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{j.hours}</td>
                       </tr>
                     ))
                   )}
                   <tr className="border-t border-gray-300 font-medium text-gray-900">
-                    <td className="py-1">Total</td>
-                    <td className="py-1 text-right tabular-nums">{week.total_hours}</td>
+                    <td className="px-2 py-1">Total</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{week.total_hours}</td>
                   </tr>
                 </tbody>
               </table>

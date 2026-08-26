@@ -88,7 +88,7 @@ export default function PtoPanel({
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-gray-500">
+          <thead className="border-b border-gray-200 bg-[#3d8f86] text-white">
             <tr>
               <th className="px-3 py-2 font-medium"></th>
               <th className="px-4 py-2 font-medium">Employee</th>
