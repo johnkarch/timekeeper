@@ -9,6 +9,7 @@ import type { Role } from "@/lib/types";
 const links: { href: string; label: string; roles: Role[] }[] = [
   { href: "/weekly", label: "Week Overview", roles: ["employee", "admin"] },
   { href: "/payroll", label: "Payroll", roles: ["employee", "admin"] },
+  { href: "/reports", label: "Reports", roles: ["employee", "admin"] },
   { href: "/monthly", label: "Monthly Billing Overview", roles: ["admin"] },
   { href: "/jobs", label: "Jobs", roles: ["admin"] },
   { href: "/business", label: "Business Management", roles: ["admin"] },

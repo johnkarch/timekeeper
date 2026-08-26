@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { addDays, formatDateLabel, shortDayLabel, todayISO } from "@/lib/dates";
 import { fetchPayPeriodCalendar } from "@/lib/pay-period-calendar";
-import ExportMenu from "@/components/export-menu";
-
-const EXPORT_FORMATS = [
-  { format: "xlsx", label: "Excel (.xlsx)" },
-  { format: "pdf", label: "PDF" },
-];
 
 function periodLink(periodStart: string, scope: "all" | "submitted") {
   return `/payroll?period=${periodStart}&scope=${scope}`;
@@ -61,11 +55,12 @@ export default async function PayPeriodCalendar({
           </Link>
         </div>
         <div className="flex items-center gap-3">
-          <ExportMenu
-            basePath="/api/export/payroll"
-            params={{ period: periodStart, scope }}
-            formats={EXPORT_FORMATS}
-          />
+          <Link
+            href={`/reports?type=payroll&period=${periodStart}&scope=${scope}`}
+            className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+          >
+            Reports
+          </Link>
           <Link
             href={periodLink(periodStart, submittedOnly ? "all" : "submitted")}
             className="inline-flex items-center gap-2"

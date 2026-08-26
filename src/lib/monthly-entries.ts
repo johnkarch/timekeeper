@@ -27,6 +27,8 @@ export interface MonthlyFilters {
   end: string; // first day of next month, exclusive
   billed?: "billed" | "unbilled";
   q?: string;
+  userIds?: string[];
+  jobIds?: string[];
 }
 
 export async function fetchMonthlyEntries(filters: MonthlyFilters): Promise<MonthlyEntry[]> {
@@ -45,6 +47,12 @@ export async function fetchMonthlyEntries(filters: MonthlyFilters): Promise<Mont
   if (filters.billed === "unbilled") query = query.eq("billed", false);
   if (filters.q) {
     query = query.filter("jobs.name", "ilike", `%${filters.q}%`);
+  }
+  if (filters.userIds && filters.userIds.length > 0) {
+    query = query.in("user_id", filters.userIds);
+  }
+  if (filters.jobIds && filters.jobIds.length > 0) {
+    query = query.in("job_id", filters.jobIds);
   }
 
   const { data, error } = await query;

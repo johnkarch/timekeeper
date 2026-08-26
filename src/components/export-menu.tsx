@@ -16,7 +16,7 @@ export default function ExportMenu({
   formats = DEFAULT_FORMATS,
 }: {
   basePath: string;
-  params: Record<string, string>;
+  params: Record<string, string | string[]>;
   formats?: { format: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
@@ -43,7 +43,14 @@ export default function ExportMenu({
   }, [open]);
 
   function urlFor(format: string) {
-    const searchParams = new URLSearchParams(params);
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => searchParams.append(key, v));
+      } else {
+        searchParams.set(key, value);
+      }
+    }
     searchParams.set("format", format);
     return `${basePath}?${searchParams.toString()}`;
   }

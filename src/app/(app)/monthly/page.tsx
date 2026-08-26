@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { addMonths, currentMonth, firstOfMonth, formatMonthLabel } from "@/lib/dates";
+import { addDays, addMonths, currentMonth, firstOfMonth, formatMonthLabel } from "@/lib/dates";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import JobSearchField from "@/app/(app)/job-search-field";
-import ExportMenu from "@/components/export-menu";
 
 function monthLink(month: string, billed?: string, q?: string) {
   const params = new URLSearchParams({ month });
@@ -54,9 +53,12 @@ export default async function MonthlyPage({
   );
   const totalUnbilledHours = unbilledEntries.reduce((sum, e) => sum + e.hours, 0);
 
-  const exportParams: Record<string, string> = { month };
-  if (billedFilter) exportParams.billed = billedFilter;
-  if (q) exportParams.q = q;
+  const reportsParams = new URLSearchParams({
+    type: "detail",
+    start,
+    end: addDays(end, -1),
+  });
+  if (billedFilter) reportsParams.set("billed", billedFilter);
 
   return (
     <div className="space-y-6">
@@ -119,7 +121,12 @@ export default async function MonthlyPage({
         >
           Apply
         </button>
-        <ExportMenu basePath="/api/export/monthly" params={exportParams} />
+        <Link
+          href={`/reports?${reportsParams.toString()}`}
+          className="rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+        >
+          Reports
+        </Link>
       </form>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
