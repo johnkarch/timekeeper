@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ChecklistField from "./checklist-field";
+import ExportMenu from "@/components/export-menu";
 import { addDays, addMonths, currentMonth, firstOfMonth, todayISO } from "@/lib/dates";
 import { employeeLabel } from "@/lib/employee-label";
 import type { Employee, Job } from "@/lib/types";
@@ -35,6 +36,7 @@ export default function ReportFiltersForm({
   isAdmin,
   employees,
   jobs,
+  exportParams,
 }: {
   type: "detail" | "summary";
   searchParams: Record<string, string | string[] | undefined>;
@@ -42,6 +44,7 @@ export default function ReportFiltersForm({
   isAdmin: boolean;
   employees: Employee[];
   jobs: Job[];
+  exportParams: Record<string, string | string[]>;
 }) {
   const month = currentMonth();
   const thisMonthStart = firstOfMonth(month);
@@ -124,12 +127,15 @@ export default function ReportFiltersForm({
           selectedIds={selectedJobIds}
         />
       </div>
-      <button
-        type="submit"
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-      >
-        Apply
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          type="submit"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Apply
+        </button>
+        <ExportMenu basePath="/api/export/reports" params={exportParams} />
+      </div>
     </form>
   );
 }

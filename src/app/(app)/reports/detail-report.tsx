@@ -1,7 +1,6 @@
 import { resolveDetailFilters } from "@/lib/report-filters";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import ReportFiltersForm from "./report-filters-form";
-import ExportMenu from "@/components/export-menu";
 import type { CurrentUser } from "@/lib/auth";
 import type { Employee, Job } from "@/lib/types";
 
@@ -38,6 +37,7 @@ export default async function DetailReport({
         isAdmin={isAdmin}
         employees={employees}
         jobs={jobs}
+        exportParams={exportParams}
       />
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -74,8 +74,6 @@ export default async function DetailReport({
           </tbody>
         </table>
       </div>
-
-      <ExportMenu basePath="/api/export/reports" params={exportParams} />
     </div>
   );
 }
