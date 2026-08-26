@@ -56,19 +56,6 @@ export async function updateJob(id: string, formData: FormData) {
   redirect("/jobs?success=1");
 }
 
-export async function setJobActive(id: string, isActive: boolean) {
-  await requireAdmin();
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("jobs").update({ is_active: isActive }).eq("id", id);
-
-  if (error) {
-    redirect(`/jobs?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath("/jobs");
-}
-
 export async function deleteJob(id: string) {
   await requireAdmin();
 
@@ -81,6 +68,28 @@ export async function deleteJob(id: string) {
         ? "Can't delete this job — it has time entries logged against it. Deactivate it instead."
         : error.message;
     redirect(`/jobs?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/jobs");
+  redirect("/jobs?success=1");
+}
+
+export async function bulkSetJobActive(formData: FormData) {
+  await requireAdmin();
+
+  const ids = formData.getAll("jobIds").map(String);
+  const intent = String(formData.get("intent"));
+
+  if (ids.length === 0) {
+    redirect(`/jobs?error=${encodeURIComponent("Select at least one job first.")}`);
+  }
+
+  const isActive = intent === "activate";
+  const supabase = await createClient();
+  const { error } = await supabase.from("jobs").update({ is_active: isActive }).in("id", ids);
+
+  if (error) {
+    redirect(`/jobs?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/jobs");

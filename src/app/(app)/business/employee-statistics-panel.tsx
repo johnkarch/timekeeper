@@ -79,18 +79,18 @@ export default function EmployeeStatisticsPanel({
               stats.map((row) => (
                 <tr key={row.user_id} className="border-b border-gray-100 last:border-0">
                   <td className="px-4 py-2 font-medium text-gray-900">{row.employee_name}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{row.regular.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{row.overtime.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{row.weekend.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{row.pto.toFixed(1)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{row.regular.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{row.overtime.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{row.weekend.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{row.pto.toFixed(2)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">
-                    {row.billed_hours.toFixed(1)}
+                    {row.billed_hours.toFixed(2)}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
-                    {row.unbilled_hours.toFixed(1)}
+                    {row.unbilled_hours.toFixed(2)}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
-                    {row.pto_balance.toFixed(1)}
+                    {row.pto_balance.toFixed(2)}
                   </td>
                 </tr>
               ))

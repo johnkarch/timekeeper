@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { updateJob, setJobActive, deleteJob } from "./actions";
+import { updateJob, deleteJob } from "./actions";
 import { formatDateLabel } from "@/lib/dates";
 import SubmitButton from "@/components/submit-button";
 import type { JobWithEntries } from "@/lib/types";
@@ -86,25 +86,19 @@ export default function JobBlock({
               Cancel
             </button>
           </form>
-          <div className="mt-2 flex items-center gap-2">
-            <form action={deleteJob.bind(null, job.id)}
-              onSubmit={(e) => {
-                if (!confirm(`Delete "${job.name}"? This can't be undone.`)) e.preventDefault();
-              }}
+          <form action={deleteJob.bind(null, job.id)}
+            className="mt-2"
+            onSubmit={(e) => {
+              if (!confirm(`Delete "${job.name}"? This can't be undone.`)) e.preventDefault();
+            }}
+          >
+            <SubmitButton
+              pendingLabel="Deleting…"
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
             >
-              <SubmitButton
-                pendingLabel="Deleting…"
-                className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                Delete job
-              </SubmitButton>
-            </form>
-            <form action={setJobActive.bind(null, job.id, !job.is_active)}>
-              <SubmitButton className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                {job.is_active ? "Deactivate" : "Activate"}
-              </SubmitButton>
-            </form>
-          </div>
+              Delete job
+            </SubmitButton>
+          </form>
         </td>
       </tr>
     );

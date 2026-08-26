@@ -188,10 +188,10 @@ export default async function PayrollReport({
               <div key={e.user_id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <h3 className="font-bold text-gray-900">{e.employee_name}</h3>
                 <div className="mt-2 space-y-1 text-sm text-gray-700">
-                  <p>Regular hours: {e.regular.toFixed(1)}</p>
-                  <p>Overtime hours: {e.overtime.toFixed(1)}</p>
-                  <p>Weekend hours: {e.weekend.toFixed(1)}</p>
-                  <p>Vacation/Holiday/PTO: {e.pto.toFixed(1)}</p>
+                  <p>Regular hours: {e.regular.toFixed(2)}</p>
+                  <p>Overtime hours: {e.overtime.toFixed(2)}</p>
+                  <p>Weekend hours: {e.weekend.toFixed(2)}</p>
+                  <p>Vacation/Holiday/PTO: {e.pto.toFixed(2)}</p>
                 </div>
               </div>
             ))}

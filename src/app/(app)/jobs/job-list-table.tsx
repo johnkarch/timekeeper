@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { bulkUpdateBilled } from "./actions";
+import { bulkSetJobActive, bulkUpdateBilled } from "./actions";
 import JobBlock from "./job-block";
 import type { JobWithEntries } from "@/lib/types";
 
@@ -65,6 +65,17 @@ export default function JobListTable({ jobs }: { jobs: JobWithEntries[] }) {
   const allActiveExpanded =
     activeJobIds.length > 0 && activeJobIds.every((id) => expanded.has(id));
 
+  // A job counts as "selected" for Activate/Deactivate once every one of its
+  // entries is checked via its row's own checkbox — there's no separate
+  // job-level checkbox. A job with no entries can never be selected this
+  // way, since its checkbox has nothing to check and stays disabled.
+  const selectedJobIds = jobs
+    .filter((job) => {
+      const entryIds = job.entries.map((e) => e.id);
+      return entryIds.length > 0 && entryIds.every((id) => selected.has(id));
+    })
+    .map((job) => job.id);
+
   function toggleExpand(jobId: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -113,6 +124,15 @@ export default function JobListTable({ jobs }: { jobs: JobWithEntries[] }) {
     formData.set("intent", intent);
     startTransition(async () => {
       await bulkUpdateBilled(formData);
+    });
+  }
+
+  function handleBulkActive(intent: "activate" | "deactivate") {
+    const formData = new FormData();
+    selectedJobIds.forEach((id) => formData.append("jobIds", id));
+    formData.set("intent", intent);
+    startTransition(async () => {
+      await bulkSetJobActive(formData);
     });
   }
 
@@ -226,6 +246,22 @@ export default function JobListTable({ jobs }: { jobs: JobWithEntries[] }) {
           className="rounded-md border border-blue-600 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Mark unbilled
+        </button>
+        <button
+          type="button"
+          disabled={selectedJobIds.length === 0 || isPending}
+          onClick={() => handleBulkActive("activate")}
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Activate
+        </button>
+        <button
+          type="button"
+          disabled={selectedJobIds.length === 0 || isPending}
+          onClick={() => handleBulkActive("deactivate")}
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Deactivate
         </button>
       </div>
     </div>

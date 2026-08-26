@@ -81,10 +81,10 @@ export async function GET(request: Request) {
     ];
     const totalsRows = breakdown.map((e) => [
       e.employee_name,
-      e.regular.toFixed(1),
-      e.overtime.toFixed(1),
-      e.weekend.toFixed(1),
-      e.pto.toFixed(1),
+      e.regular.toFixed(2),
+      e.overtime.toFixed(2),
+      e.weekend.toFixed(2),
+      e.pto.toFixed(2),
     ]);
 
     const title = `Pay Period: ${formatDateLabel(periodStart)} – ${formatDateLabel(days[13])}`;
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
         options: {
           stripeCount: totalsRows.length,
           headerColor: HEADER_COLOR,
-          numberFormat: "0.0",
+          numberFormat: "0.00",
         },
       },
     ]);

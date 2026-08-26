@@ -121,7 +121,7 @@ export default function PtoPanel({
                     <td className="px-4 py-2 font-medium text-gray-900">
                       {employeeLabel(employee)}
                     </td>
-                    <td className="px-4 py-2 text-right">{balance.toFixed(1)} hrs</td>
+                    <td className="px-4 py-2 text-right">{balance.toFixed(2)} hrs</td>
                   </tr>
                   {isExpanded &&
                     history.map((adjustment) => (
@@ -133,7 +133,7 @@ export default function PtoPanel({
                         </td>
                         <td className="px-4 py-1.5 text-right">
                           {adjustment.hours > 0 ? "+" : ""}
-                          {adjustment.hours.toFixed(1)}
+                          {adjustment.hours.toFixed(2)}
                         </td>
                       </tr>
                     ))}
