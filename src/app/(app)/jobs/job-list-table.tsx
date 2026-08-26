@@ -10,11 +10,27 @@ export default function JobListTable({ jobs }: { jobs: JobWithEntries[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
+  const activeJobIds = jobs.filter((job) => job.is_active).map((job) => job.id);
+  const allActiveExpanded =
+    activeJobIds.length > 0 && activeJobIds.every((id) => expanded.has(id));
+
   function toggleExpand(jobId: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(jobId)) next.delete(jobId);
       else next.add(jobId);
+      return next;
+    });
+  }
+
+  function toggleExpandAll() {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (allActiveExpanded) {
+        activeJobIds.forEach((id) => next.delete(id));
+      } else {
+        activeJobIds.forEach((id) => next.add(id));
+      }
       return next;
     });
   }
@@ -51,6 +67,18 @@ export default function JobListTable({ jobs }: { jobs: JobWithEntries[] }) {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-gray-900">Job List</h2>
+        <button
+          type="button"
+          onClick={toggleExpandAll}
+          disabled={activeJobIds.length === 0}
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {allActiveExpanded ? "Collapse all" : "Expand all"}
+        </button>
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-gray-200 text-gray-500">

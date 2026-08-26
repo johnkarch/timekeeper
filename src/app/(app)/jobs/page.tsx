@@ -119,14 +119,7 @@ export default async function JobsPage({
         </form>
       </div>
 
-      <div className="space-y-2">
-        <h2 className="text-base font-bold text-gray-900">Job List</h2>
-        <p className="text-xs text-gray-400">
-          Click a job to see its entries. Bill Rate and Billable Amount are placeholders until the
-          rate model is decided.
-        </p>
-        <JobListTable jobs={jobs} />
-      </div>
+      <JobListTable jobs={jobs} />
     </div>
   );
 }
