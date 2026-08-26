@@ -13,8 +13,6 @@ export interface TimeEntryListItem {
   notes: string | null;
   billed: boolean;
   job_name: string;
-  work_type_id: string | null;
-  work_type_name: string | null;
 }
 
 export interface JobEntry {
@@ -66,12 +64,6 @@ export interface EmployeeHoursBreakdown {
   pto: number;
 }
 
-export interface WorkType {
-  id: string;
-  name: string;
-  is_active: boolean;
-}
-
 export interface Employee {
   id: string;
   full_name: string | null;
@@ -81,8 +73,6 @@ export interface Employee {
 export interface BillRate {
   id: string;
   user_id: string;
-  work_type_id: string;
-  job_id: string | null;
   rate: number;
 }
 

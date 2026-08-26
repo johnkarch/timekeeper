@@ -7,25 +7,15 @@ import SubmitButton from "@/components/submit-button";
 export interface BillRateDisplay {
   id: string;
   employee_name: string;
-  work_type_name: string;
-  job_name: string | null;
   rate: number;
 }
 
-export default function BillRateRow({
-  billRate,
-  showJobColumn,
-}: {
-  billRate: BillRateDisplay;
-  showJobColumn: boolean;
-}) {
+export default function BillRateRow({ billRate }: { billRate: BillRateDisplay }) {
   const [editing, setEditing] = useState(false);
 
   return (
     <tr className="border-b border-gray-100">
       <td className="px-4 py-2 font-medium text-gray-900">{billRate.employee_name}</td>
-      <td className="px-4 py-2">{billRate.work_type_name}</td>
-      {showJobColumn && <td className="px-4 py-2">{billRate.job_name}</td>}
       <td className="px-4 py-2 text-right">
         {editing ? (
           <form

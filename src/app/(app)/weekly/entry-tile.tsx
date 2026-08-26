@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { updateTimeEntry, deleteTimeEntry } from "./actions";
 import JobField from "./job-field";
 import SubmitButton from "@/components/submit-button";
-import type { TimeEntryListItem, WorkType } from "@/lib/types";
+import type { TimeEntryListItem } from "@/lib/types";
 
 const PANEL_WIDTH = 288; // matches w-72
 const PANEL_HEIGHT_ESTIMATE = 380;
@@ -16,13 +16,11 @@ export default function EntryTile({
   weekParam,
   canEdit,
   highlight,
-  workTypes,
 }: {
   entry: TimeEntryListItem;
   weekParam: string;
   canEdit: boolean;
   highlight: boolean;
-  workTypes: WorkType[];
 }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -141,24 +139,6 @@ export default function EntryTile({
             <form id={`update-form-${entry.id}`} onSubmit={handleUpdateSubmit} className="space-y-2">
               <input type="hidden" name="week" value={weekParam} />
               <JobField id={`job-${entry.id}`} defaultValue={entry.job_name} />
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Work Type</label>
-                <select
-                  name="work_type_id"
-                  required
-                  defaultValue={entry.work_type_id ?? ""}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
-                >
-                  <option value="" disabled>
-                    Choose…
-                  </option>
-                  {workTypes.map((workType) => (
-                    <option key={workType.id} value={workType.id}>
-                      {workType.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-700">Date</label>
                 <input

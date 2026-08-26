@@ -5,24 +5,9 @@ import { createTimeEntry } from "./actions";
 import JobField from "./job-field";
 import { todayISO } from "@/lib/dates";
 import SubmitButton from "@/components/submit-button";
-import type { WorkType } from "@/lib/types";
 
-export default function NewEntryForm({
-  weekParam,
-  workTypes,
-}: {
-  weekParam: string;
-  workTypes: WorkType[];
-}) {
+export default function NewEntryForm({ weekParam }: { weekParam: string }) {
   const [expanded, setExpanded] = useState(false);
-
-  if (workTypes.length === 0) {
-    return (
-      <p className="text-sm text-amber-600">
-        Ask your admin to add a work type before logging time.
-      </p>
-    );
-  }
 
   if (!expanded) {
     return (
@@ -43,27 +28,6 @@ export default function NewEntryForm({
     >
       <input type="hidden" name="week" value={weekParam} />
       <JobField />
-      <div>
-        <label htmlFor="work_type_id" className="mb-1 block text-sm font-medium text-gray-700">
-          Work Type
-        </label>
-        <select
-          id="work_type_id"
-          name="work_type_id"
-          required
-          defaultValue=""
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-        >
-          <option value="" disabled>
-            Choose…
-          </option>
-          {workTypes.map((workType) => (
-            <option key={workType.id} value={workType.id}>
-              {workType.name}
-            </option>
-          ))}
-        </select>
-      </div>
       <div>
         <label htmlFor="entry_date" className="mb-1 block text-sm font-medium text-gray-700">
           Date

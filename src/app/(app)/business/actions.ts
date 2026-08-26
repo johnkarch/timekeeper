@@ -21,73 +21,6 @@ function succeed(): never {
 }
 
 // ----------------------------------------------------------------------------
-// Work Types
-// ----------------------------------------------------------------------------
-
-export async function createWorkType(formData: FormData) {
-  await requireAdmin();
-
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) fail("Enter a work type name.");
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("work_types").insert({ name });
-
-  if (error) {
-    fail(error.code === "23505" ? "That work type name is already in use." : error.message);
-  }
-
-  revalidatePath("/business");
-  succeed();
-}
-
-export async function updateWorkType(id: string, formData: FormData) {
-  await requireAdmin();
-
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) fail("Enter a work type name.");
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("work_types").update({ name }).eq("id", id);
-
-  if (error) {
-    fail(error.code === "23505" ? "That work type name is already in use." : error.message);
-  }
-
-  revalidatePath("/business");
-  succeed();
-}
-
-export async function setWorkTypeActive(id: string, isActive: boolean) {
-  await requireAdmin();
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("work_types").update({ is_active: isActive }).eq("id", id);
-
-  if (error) fail(error.message);
-
-  revalidatePath("/business");
-}
-
-export async function deleteWorkType(id: string) {
-  await requireAdmin();
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("work_types").delete().eq("id", id);
-
-  if (error) {
-    fail(
-      error.code === "23503"
-        ? "Can't delete this work type — it has time entries logged against it. Deactivate it instead."
-        : error.message
-    );
-  }
-
-  revalidatePath("/business");
-  succeed();
-}
-
-// ----------------------------------------------------------------------------
 // Bill Rates
 // ----------------------------------------------------------------------------
 
@@ -95,22 +28,18 @@ export async function addBillRate(formData: FormData) {
   await requireAdmin();
 
   const userId = String(formData.get("user_id") ?? "");
-  const workTypeId = String(formData.get("work_type_id") ?? "");
-  const jobId = String(formData.get("job_id") ?? "").trim() || null;
   const rate = Number(formData.get("rate"));
 
-  if (!userId || !workTypeId) fail("Choose an employee and a work type.");
+  if (!userId) fail("Choose an employee.");
   if (!Number.isFinite(rate) || rate < 0) fail("Enter a valid rate.");
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("bill_rates")
-    .insert({ user_id: userId, work_type_id: workTypeId, job_id: jobId, rate });
+  const { error } = await supabase.from("bill_rates").insert({ user_id: userId, rate });
 
   if (error) {
     fail(
       error.code === "23505"
-        ? "A rate already exists for that combination — edit it below instead."
+        ? "A rate already exists for that employee — edit it below instead."
         : error.message
     );
   }

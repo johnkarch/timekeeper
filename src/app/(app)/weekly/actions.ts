@@ -61,28 +61,6 @@ async function findActiveJobOrRedirect(jobText: string, week: string) {
   return job;
 }
 
-async function findWorkTypeOrRedirect(workTypeId: string, week: string) {
-  if (!workTypeId) {
-    redirect(weeklyPath(week, { error: "Choose a work type." }));
-  }
-
-  const supabase = await createClient();
-  const { data: workType } = await supabase
-    .from("work_types")
-    .select("id, is_active")
-    .eq("id", workTypeId)
-    .maybeSingle();
-
-  if (!workType) {
-    redirect(weeklyPath(week, { error: "That work type no longer exists." }));
-  }
-  if (!workType.is_active) {
-    redirect(weeklyPath(week, { error: "That work type is marked inactive." }));
-  }
-
-  return workType;
-}
-
 export async function createTimeEntry(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -91,7 +69,6 @@ export async function createTimeEntry(formData: FormData) {
   if (!user) redirect("/login");
 
   const jobText = String(formData.get("job") ?? "").trim();
-  const workTypeId = String(formData.get("work_type_id") ?? "");
   const entryDate = String(formData.get("entry_date") ?? "");
   const hours = Number(formData.get("hours"));
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -102,12 +79,10 @@ export async function createTimeEntry(formData: FormData) {
   }
 
   const job = await findActiveJobOrRedirect(jobText, week);
-  const workType = await findWorkTypeOrRedirect(workTypeId, week);
 
   const { error } = await supabase.from("time_entries").insert({
     user_id: user.id,
     job_id: job.id,
-    work_type_id: workType.id,
     entry_date: entryDate,
     hours,
     notes,
@@ -129,7 +104,6 @@ export async function updateTimeEntry(id: string, formData: FormData) {
   if (!user) redirect("/login");
 
   const jobText = String(formData.get("job") ?? "").trim();
-  const workTypeId = String(formData.get("work_type_id") ?? "");
   const entryDate = String(formData.get("entry_date") ?? "");
   const hours = Number(formData.get("hours"));
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -140,11 +114,10 @@ export async function updateTimeEntry(id: string, formData: FormData) {
   }
 
   const job = await findActiveJobOrRedirect(jobText, week);
-  const workType = await findWorkTypeOrRedirect(workTypeId, week);
 
   const { data, error } = await supabase
     .from("time_entries")
-    .update({ job_id: job.id, work_type_id: workType.id, entry_date: entryDate, hours, notes })
+    .update({ job_id: job.id, entry_date: entryDate, hours, notes })
     .eq("id", id)
     .select("id");
 

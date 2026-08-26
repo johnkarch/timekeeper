@@ -1,9 +1,17 @@
 -- Timekeeper App: database schema
 --
--- How to run this: open your Supabase project -> SQL Editor -> New query,
--- paste this whole file in, and click "Run". It's safe to run once on a
--- fresh project. If you need to re-run it after making edits, you'll likely
--- need to drop the tables first (see note at the bottom).
+-- How to run this on a BRAND NEW Supabase project: open SQL Editor -> New
+-- query, paste this whole file in, and click "Run". It's only safe to paste
+-- the WHOLE file once, on a fresh project — sections 1-6 use plain
+-- `create table` (not `create table if not exists`), so re-pasting them
+-- against a project that already has these tables fails with
+-- "relation already exists".
+--
+-- To apply a LATER change to an existing project (i.e. every time after the
+-- first): only run the NEW numbered section that was just added to the
+-- bottom of this file, not the whole thing. Sections from 7 onward are
+-- written to be safe to re-run on their own (they use `if not exists` /
+-- `drop ... if exists` guards), but the file as a whole is not.
 
 -- ============================================================================
 -- 1. PROFILES (adds a role to each logged-in user)
@@ -532,11 +540,47 @@ create policy "pto_adjustments: only admins can insert"
 grant select, insert on public.pto_adjustments to authenticated;
 
 -- ============================================================================
+-- 11. Simplify bill rates to per-employee only (retire Work Types)
+-- ============================================================================
+-- Work Type and job-specific overrides turned out to be more complexity than
+-- the business needed — bill rate now depends only on which employee logged
+-- the hours. A rate can no longer vary by work type, so existing
+-- per-employee-per-work-type rows can't be collapsed into one automatically;
+-- this truncates bill_rates once (only the first time this section runs,
+-- detected by whether the old work_type_id column is still there) so you can
+-- re-enter each employee's single rate afterward. Re-running this whole file
+-- later — once the table's already in its new shape — leaves your re-entered
+-- rates alone.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'bill_rates' and column_name = 'work_type_id'
+  ) then
+    truncate table public.bill_rates;
+  end if;
+end $$;
+
+alter table public.bill_rates drop column if exists work_type_id;
+alter table public.bill_rates drop column if exists job_id;
+
+drop index if exists public.bill_rates_default_unique_idx;
+drop index if exists public.bill_rates_job_override_unique_idx;
+create unique index if not exists bill_rates_user_id_unique_idx
+  on public.bill_rates (user_id);
+
+-- The Work Type tag on time entries is no longer used.
+alter table public.time_entries drop column if exists work_type_id;
+
+-- Work Types themselves are no longer used anywhere.
+drop table if exists public.work_types cascade;
+
+-- ============================================================================
 -- Re-running this file
 -- ============================================================================
 -- This script only works on a clean project. If you need to change the
 -- schema later, either write a new migration file with ALTER TABLE
 -- statements, or drop everything first with:
 --
--- drop table if exists public.time_entries, public.jobs, public.profiles, public.week_submissions, public.work_types, public.bill_rates, public.wage_rates, public.pto_adjustments cascade;
+-- drop table if exists public.time_entries, public.jobs, public.profiles, public.week_submissions, public.bill_rates, public.wage_rates, public.pto_adjustments cascade;
 -- drop function if exists public.handle_new_user, public.is_admin, public.set_updated_at, public.week_is_submitted cascade;

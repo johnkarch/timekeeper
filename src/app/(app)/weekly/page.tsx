@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
 import { fetchOwnEntries } from "@/lib/own-entries";
 import { fetchOwnSubmission } from "@/lib/week-submissions";
-import { fetchAllWorkTypes } from "@/lib/work-types";
 import NewEntryForm from "./new-entry-form";
 import EntryTile from "./entry-tile";
 import SubmitWeekButton from "./submit-week-button";
@@ -41,8 +40,6 @@ export default async function WeeklyPage({
 
   const entries = await fetchOwnEntries(current.user.id, monday, sunday);
   const submission = await fetchOwnSubmission(current.user.id, monday);
-  const workTypes = await fetchAllWorkTypes();
-  const activeWorkTypes = workTypes.filter((wt) => wt.is_active);
   // This page only ever shows the viewer's own week, so the submitted lock
   // applies the same regardless of role — an admin's own submitted week
   // locks exactly like an employee's. Admins only bypass the lock when
@@ -108,7 +105,7 @@ export default async function WeeklyPage({
       {success && <DismissibleBanner message="Saved." variant="success" />}
 
       <div className="flex flex-wrap items-start gap-3">
-        {canAddOrEdit && <NewEntryForm weekParam={monday} workTypes={activeWorkTypes} />}
+        {canAddOrEdit && <NewEntryForm weekParam={monday} />}
 
         <form method="GET" className="flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
@@ -185,7 +182,6 @@ export default async function WeeklyPage({
                               weekParam={monday}
                               canEdit={(!entry.billed || current.role === "admin") && !submission}
                               highlight={days[i] === todayStr}
-                              workTypes={workTypes}
                             />
                           ))}
                         </div>
