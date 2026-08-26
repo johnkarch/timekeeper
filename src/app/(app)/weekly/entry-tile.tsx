@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { updateTimeEntry, deleteTimeEntry } from "./actions";
 import JobField from "./job-field";
-import type { TimeEntryListItem } from "@/lib/types";
+import SubmitButton from "@/components/submit-button";
+import type { TimeEntryListItem, WorkType } from "@/lib/types";
 
 const PANEL_WIDTH = 288; // matches w-72
 const PANEL_HEIGHT_ESTIMATE = 380;
@@ -15,16 +16,32 @@ export default function EntryTile({
   weekParam,
   canEdit,
   highlight,
+  workTypes,
 }: {
   entry: TimeEntryListItem;
   weekParam: string;
   canEdit: boolean;
   highlight: boolean;
+  workTypes: WorkType[];
 }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [isSaving, startSaving] = useTransition();
+
+  // The Save button below lives outside this form (submitted remotely via
+  // its `form` attribute, so it can sit after the delete/cancel row) —
+  // useFormStatus only tracks a form's own descendants, so it can't see
+  // this button. Submitting manually through a transition instead lets us
+  // disable the button for the same duration.
+  function handleUpdateSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    startSaving(async () => {
+      await updateTimeEntry(entry.id, formData);
+    });
+  }
 
   function openPanel() {
     const rect = buttonRef.current?.getBoundingClientRect();
@@ -121,9 +138,27 @@ export default function EntryTile({
             style={{ position: "fixed", top: position.top, left: position.left, width: PANEL_WIDTH }}
             className="z-50 space-y-3 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-xl"
           >
-            <form id={`update-form-${entry.id}`} action={updateTimeEntry.bind(null, entry.id)} className="space-y-2">
+            <form id={`update-form-${entry.id}`} onSubmit={handleUpdateSubmit} className="space-y-2">
               <input type="hidden" name="week" value={weekParam} />
               <JobField id={`job-${entry.id}`} defaultValue={entry.job_name} />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Work Type</label>
+                <select
+                  name="work_type_id"
+                  required
+                  defaultValue={entry.work_type_id ?? ""}
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+                >
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                  {workTypes.map((workType) => (
+                    <option key={workType.id} value={workType.id}>
+                      {workType.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-700">Date</label>
                 <input
@@ -169,12 +204,12 @@ export default function EntryTile({
                 className="flex-1"
               >
                 <input type="hidden" name="week" value={weekParam} />
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingLabel="Deleting…"
                   className="w-full rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
                 >
                   Delete entry
-                </button>
+                </SubmitButton>
               </form>
               <button
                 type="button"
@@ -188,9 +223,10 @@ export default function EntryTile({
             <button
               form={`update-form-${entry.id}`}
               type="submit"
-              className="w-full rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              disabled={isSaving}
+              className="w-full rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Save
+              {isSaving ? "Saving…" : "Save"}
             </button>
           </div>,
           document.body

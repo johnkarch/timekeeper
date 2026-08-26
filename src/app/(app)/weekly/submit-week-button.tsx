@@ -1,6 +1,7 @@
 "use client";
 
 import { submitWeek } from "./actions";
+import SubmitButton from "@/components/submit-button";
 
 export default function SubmitWeekButton({ weekParam }: { weekParam: string }) {
   return (
@@ -17,12 +18,12 @@ export default function SubmitWeekButton({ weekParam }: { weekParam: string }) {
       }}
     >
       <input type="hidden" name="week" value={weekParam} />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Submitting…"
         className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
       >
         Submit
-      </button>
+      </SubmitButton>
     </form>
   );
 }

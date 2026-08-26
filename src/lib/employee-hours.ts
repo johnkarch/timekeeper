@@ -1,11 +1,7 @@
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import { addDays, mondayOf } from "@/lib/dates";
+import { PTO_JOB_PATTERN } from "@/lib/pto";
 import type { EmployeeHoursBreakdown } from "@/lib/types";
-
-// No agreed-upon job for this exists yet — matches any job whose name
-// mentions PTO, vacation, or a holiday, case-insensitively. Update this if
-// a specific job number/name is settled on later.
-const PTO_JOB_PATTERN = /pto|vacation|holiday/i;
 
 const OVERTIME_THRESHOLD = 40; // hours per week, not per pay period
 

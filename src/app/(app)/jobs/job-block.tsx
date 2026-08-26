@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { updateJob, setJobActive, deleteJob } from "./actions";
 import { formatDateLabel } from "@/lib/dates";
+import SubmitButton from "@/components/submit-button";
 import type { JobWithEntries } from "@/lib/types";
 
 export default function JobBlock({
@@ -71,12 +72,12 @@ export default function JobBlock({
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Saving…"
               className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800"
             >
               Save
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setEditing(false)}
@@ -92,12 +93,12 @@ export default function JobBlock({
             }}
             className="mt-2"
           >
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Deleting…"
               className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
             >
               Delete job
-            </button>
+            </SubmitButton>
           </form>
         </td>
       </tr>
@@ -153,12 +154,9 @@ export default function JobBlock({
               Edit
             </button>
             <form action={setJobActive.bind(null, job.id, !job.is_active)}>
-              <button
-                type="submit"
-                className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              >
+              <SubmitButton className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
                 {job.is_active ? "Deactivate" : "Activate"}
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </td>

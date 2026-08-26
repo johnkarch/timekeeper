@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { login } from "./actions";
 import DismissibleBanner from "@/components/dismissible-banner";
+import SubmitButton from "@/components/submit-button";
 
 export default async function LoginPage({
   searchParams,
@@ -64,12 +65,12 @@ export default async function LoginPage({
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             />
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Signing in…"
             className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Sign in
-          </button>
+          </SubmitButton>
         </form>
 
         <p className="mt-6 text-xs text-gray-400">

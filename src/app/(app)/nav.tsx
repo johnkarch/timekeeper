@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/login/actions";
+import SubmitButton from "@/components/submit-button";
 import type { Role } from "@/lib/types";
 
 const links: { href: string; label: string; roles: Role[] }[] = [
@@ -10,6 +11,7 @@ const links: { href: string; label: string; roles: Role[] }[] = [
   { href: "/payroll", label: "Payroll", roles: ["employee", "admin"] },
   { href: "/monthly", label: "Monthly Billing Overview", roles: ["admin"] },
   { href: "/jobs", label: "Jobs", roles: ["admin"] },
+  { href: "/business", label: "Business Management", roles: ["admin"] },
 ];
 
 export default function Nav({
@@ -47,12 +49,9 @@ export default function Nav({
         <div className="flex items-center gap-3">
           <span className="text-sm text-white/90">{fullName || email}</span>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
+            <SubmitButton className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
               Sign out
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

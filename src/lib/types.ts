@@ -13,6 +13,8 @@ export interface TimeEntryListItem {
   notes: string | null;
   billed: boolean;
   job_name: string;
+  work_type_id: string | null;
+  work_type_name: string | null;
 }
 
 export interface JobEntry {
@@ -62,4 +64,51 @@ export interface EmployeeHoursBreakdown {
   overtime: number;
   weekend: number;
   pto: number;
+}
+
+export interface WorkType {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface Employee {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+export interface BillRate {
+  id: string;
+  user_id: string;
+  work_type_id: string;
+  job_id: string | null;
+  rate: number;
+}
+
+export interface WageRate {
+  id: string;
+  user_id: string;
+  hourly_rate: number;
+  effective_date: string;
+}
+
+export interface PtoAdjustment {
+  id: string;
+  user_id: string;
+  hours: number;
+  reason: string;
+  created_at: string;
+}
+
+export interface EmployeeStatistics {
+  user_id: string;
+  employee_name: string;
+  regular: number;
+  overtime: number;
+  weekend: number;
+  pto: number;
+  billed_hours: number;
+  unbilled_hours: number;
+  pto_balance: number;
 }

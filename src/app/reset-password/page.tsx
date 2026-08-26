@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updatePassword } from "./actions";
 import DismissibleBanner from "@/components/dismissible-banner";
+import SubmitButton from "@/components/submit-button";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -61,12 +62,12 @@ export default async function ResetPasswordPage({
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
             />
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Updating…"
             className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Update password
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </main>

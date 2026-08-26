@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requestPasswordReset } from "./actions";
 import DismissibleBanner from "@/components/dismissible-banner";
+import SubmitButton from "@/components/submit-button";
 
 export default async function ForgotPasswordPage({
   searchParams,
@@ -39,12 +40,12 @@ export default async function ForgotPasswordPage({
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
               />
             </div>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Sending…"
               className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               Send reset link
-            </button>
+            </SubmitButton>
           </form>
         )}
 

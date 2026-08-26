@@ -317,11 +317,226 @@ create policy "time_entries: delete own unbilled or admin"
 --   where id = (select id from auth.users where email = 'you@example.com');
 
 -- ============================================================================
+-- 7. WORK TYPES (labor categories, e.g. "Design", "Field Labor", "PM")
+-- ============================================================================
+-- A small admin-managed list, independent of Jobs. Every time entry going
+-- forward is tagged with one of these (see time_entries.work_type_id below).
+
+create table if not exists public.work_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists work_types_name_unique_idx
+  on public.work_types (lower(name));
+
+alter table public.work_types enable row level security;
+
+-- Any logged-in user can read the list (needed to populate the dropdown on
+-- the Log Time form).
+drop policy if exists "work_types: any logged-in user can read" on public.work_types;
+create policy "work_types: any logged-in user can read"
+  on public.work_types for select
+  to authenticated
+  using (true);
+
+-- Only admins can create, edit, or deactivate work types.
+drop policy if exists "work_types: only admins can insert" on public.work_types;
+create policy "work_types: only admins can insert"
+  on public.work_types for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "work_types: only admins can update" on public.work_types;
+create policy "work_types: only admins can update"
+  on public.work_types for update
+  to authenticated
+  using (public.is_admin());
+
+-- A work type with time entries against it can't actually be deleted (the
+-- foreign key on time_entries.work_type_id blocks it) — same pattern as
+-- jobs. Deactivate is the intended way to retire one with real history.
+drop policy if exists "work_types: only admins can delete" on public.work_types;
+create policy "work_types: only admins can delete"
+  on public.work_types for delete
+  to authenticated
+  using (public.is_admin());
+
+grant select, insert, update, delete on public.work_types to authenticated;
+
+drop trigger if exists work_types_set_updated_at on public.work_types;
+create trigger work_types_set_updated_at
+  before update on public.work_types
+  for each row execute function public.set_updated_at();
+
+-- Nullable at the database level (existing historical rows have none), but
+-- the app enforces it as required for anything logged going forward — an
+-- admin must create at least one active work type before employees can log
+-- time (see the Log Time form's empty-state message).
+alter table public.time_entries
+  add column if not exists work_type_id uuid references public.work_types (id);
+
+create index if not exists time_entries_work_type_idx
+  on public.time_entries (work_type_id);
+
+-- ============================================================================
+-- 8. BILL RATES (admin-set, keyed by employee + work type, optional job override)
+-- ============================================================================
+-- Two flavors of row, distinguished by whether job_id is null:
+--   - job_id IS NULL     -> the employee's default rate for that work type.
+--   - job_id IS NOT NULL -> an override that applies only on that one job.
+-- Resolution order (done in application code, not SQL): job-specific row
+-- first, falling back to the default row, per (employee, work type).
+
+create table if not exists public.bill_rates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  work_type_id uuid not null references public.work_types (id) on delete cascade,
+  job_id uuid references public.jobs (id) on delete cascade,
+  rate numeric(8, 2) not null check (rate >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Only one default rate per (employee, work type)...
+create unique index if not exists bill_rates_default_unique_idx
+  on public.bill_rates (user_id, work_type_id)
+  where job_id is null;
+
+-- ...and only one override per (employee, work type, job).
+create unique index if not exists bill_rates_job_override_unique_idx
+  on public.bill_rates (user_id, work_type_id, job_id)
+  where job_id is not null;
+
+alter table public.bill_rates enable row level security;
+
+-- Admin-only in both directions — this is pay-rate data, not something any
+-- employee should be able to read about themselves or anyone else.
+drop policy if exists "bill_rates: only admins can read" on public.bill_rates;
+create policy "bill_rates: only admins can read"
+  on public.bill_rates for select
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "bill_rates: only admins can insert" on public.bill_rates;
+create policy "bill_rates: only admins can insert"
+  on public.bill_rates for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "bill_rates: only admins can update" on public.bill_rates;
+create policy "bill_rates: only admins can update"
+  on public.bill_rates for update
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "bill_rates: only admins can delete" on public.bill_rates;
+create policy "bill_rates: only admins can delete"
+  on public.bill_rates for delete
+  to authenticated
+  using (public.is_admin());
+
+grant select, insert, update, delete on public.bill_rates to authenticated;
+
+drop trigger if exists bill_rates_set_updated_at on public.bill_rates;
+create trigger bill_rates_set_updated_at
+  before update on public.bill_rates
+  for each row execute function public.set_updated_at();
+
+-- ============================================================================
+-- 9. WAGE RATES (effective-dated history per employee, append-only)
+-- ============================================================================
+-- A new row is inserted whenever an employee's wage changes; nothing is ever
+-- edited or deleted, so past rates stay intact for historical reporting. The
+-- "current" rate as of a given date is the row with the latest
+-- effective_date <= that date.
+
+create table if not exists public.wage_rates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  hourly_rate numeric(8, 2) not null check (hourly_rate >= 0),
+  effective_date date not null,
+  created_at timestamptz not null default now()
+);
+
+-- Only one wage-rate row per employee per effective date (re-entering the
+-- same date is a mistake, not a legitimate second rate on that day).
+create unique index if not exists wage_rates_user_date_unique_idx
+  on public.wage_rates (user_id, effective_date);
+
+create index if not exists wage_rates_user_idx
+  on public.wage_rates (user_id, effective_date desc);
+
+alter table public.wage_rates enable row level security;
+
+-- Admin-only, same reasoning as bill_rates.
+drop policy if exists "wage_rates: only admins can read" on public.wage_rates;
+create policy "wage_rates: only admins can read"
+  on public.wage_rates for select
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "wage_rates: only admins can insert" on public.wage_rates;
+create policy "wage_rates: only admins can insert"
+  on public.wage_rates for insert
+  to authenticated
+  with check (public.is_admin());
+
+-- No update or delete policy on purpose — this table is append-only. If a
+-- rate was entered wrong, the fix is to insert a correcting row with the
+-- right effective_date, not to edit history.
+
+grant select, insert on public.wage_rates to authenticated;
+
+-- ============================================================================
+-- 10. PTO ADJUSTMENTS (append-only ledger; balance = sum(adjustments) - used)
+-- ============================================================================
+-- Each row is a grant or correction to an employee's PTO balance (positive
+-- or negative hours) with a required reason. "PTO hours used" is NOT stored
+-- here — it's derived on the fly from time_entries using the same
+-- PTO_JOB_PATTERN the Payroll page already uses (see src/lib/pto.ts).
+
+create table if not exists public.pto_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  hours numeric(6, 2) not null check (hours <> 0),
+  reason text not null,
+  created_by uuid references public.profiles (id),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists pto_adjustments_user_idx on public.pto_adjustments (user_id);
+
+alter table public.pto_adjustments enable row level security;
+
+-- Admin-only, same reasoning as bill_rates/wage_rates.
+drop policy if exists "pto_adjustments: only admins can read" on public.pto_adjustments;
+create policy "pto_adjustments: only admins can read"
+  on public.pto_adjustments for select
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "pto_adjustments: only admins can insert" on public.pto_adjustments;
+create policy "pto_adjustments: only admins can insert"
+  on public.pto_adjustments for insert
+  to authenticated
+  with check (public.is_admin());
+
+-- No update or delete policy on purpose — append-only ledger, same spirit
+-- as wage_rates. A mistaken grant is corrected with an offsetting negative
+-- row, not by editing/deleting the original.
+
+grant select, insert on public.pto_adjustments to authenticated;
+
+-- ============================================================================
 -- Re-running this file
 -- ============================================================================
 -- This script only works on a clean project. If you need to change the
 -- schema later, either write a new migration file with ALTER TABLE
 -- statements, or drop everything first with:
 --
--- drop table if exists public.time_entries, public.jobs, public.profiles, public.week_submissions cascade;
+-- drop table if exists public.time_entries, public.jobs, public.profiles, public.week_submissions, public.work_types, public.bill_rates, public.wage_rates, public.pto_adjustments cascade;
 -- drop function if exists public.handle_new_user, public.is_admin, public.set_updated_at, public.week_is_submitted cascade;

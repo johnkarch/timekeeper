@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createJob } from "./actions";
 import JobListTable from "./job-list-table";
 import DismissibleBanner from "@/components/dismissible-banner";
+import SubmitButton from "@/components/submit-button";
 import type { JobWithEntries } from "@/lib/types";
 
 interface JobRow {
@@ -108,12 +109,12 @@ export default async function JobsPage({
                 className="w-96 rounded-md border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Adding…"
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               Add job
-            </button>
+            </SubmitButton>
           </div>
           <p className="mt-1 text-xs text-gray-400">Must start with a 6-digit job number.</p>
         </form>
