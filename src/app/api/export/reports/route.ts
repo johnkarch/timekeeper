@@ -221,7 +221,14 @@ export async function GET(request: Request) {
     const rows = summary.map((s) => [s.job_name, String(s.hours)]);
 
     if (format === "xlsx") {
-      const buffer = await buildXlsx([{ sheetName: "Summary", header, rows }]);
+      const buffer = await buildXlsx([
+        {
+          sheetName: "Summary",
+          header,
+          rows,
+          options: { stripeCount: rows.length, headerColor: HEADER_COLOR },
+        },
+      ]);
       return new Response(new Uint8Array(buffer), {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -231,7 +238,12 @@ export async function GET(request: Request) {
     }
     if (format === "pdf") {
       const buffer = await buildPdf("Summary Report", [
-        { header, rows, colWidths: [300] },
+        {
+          header,
+          rows,
+          colWidths: [300],
+          options: { stripeCount: rows.length, headerColor: HEADER_COLOR },
+        },
       ]);
       return new Response(new Uint8Array(buffer), {
         headers: {
@@ -261,7 +273,14 @@ export async function GET(request: Request) {
   ]);
 
   if (format === "xlsx") {
-    const buffer = await buildXlsx([{ sheetName: "Detail", header, rows }]);
+    const buffer = await buildXlsx([
+      {
+        sheetName: "Detail",
+        header,
+        rows,
+        options: { stripeCount: rows.length, headerColor: HEADER_COLOR },
+      },
+    ]);
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -288,6 +307,7 @@ export async function GET(request: Request) {
         header: pdfHeader,
         rows: pdfRows,
         colWidths: [65, 90, 140, 42, 45],
+        options: { stripeCount: pdfRows.length, headerColor: HEADER_COLOR },
       },
     ]);
     return new Response(new Uint8Array(buffer), {
