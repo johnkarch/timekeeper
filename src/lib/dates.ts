@@ -33,8 +33,13 @@ export function addDays(dateStr: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function todayISO(): string {
-  return new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+// With no timeZone, uses whatever machine runs this code — correct for a
+// client component (the viewer's own browser) but not for a server
+// component, which runs on the host's clock instead of the viewer's. Server
+// callers should pass the viewer's zone (see getViewerTimeZone) when they
+// have it.
+export function todayISO(timeZone?: string): string {
+  return new Date().toLocaleDateString("en-CA", timeZone ? { timeZone } : undefined); // YYYY-MM-DD
 }
 
 export function formatDateLabel(dateStr: string): string {

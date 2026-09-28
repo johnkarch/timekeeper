@@ -5,17 +5,19 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Job } from "@/lib/types";
 
-export async function searchJobs(text: string): Promise<Job[]> {
+export async function searchJobs(
+  text: string,
+  options: { activeOnly?: boolean } = {}
+): Promise<Job[]> {
   const trimmed = text.trim();
   if (!trimmed) return [];
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("jobs")
-    .select("id, name, is_active")
-    .ilike("name", `%${trimmed}%`)
-    .order("name", { ascending: true })
-    .limit(8);
+  let query = supabase.from("jobs").select("id, name, is_active").ilike("name", `%${trimmed}%`);
+  if (options.activeOnly) {
+    query = query.eq("is_active", true);
+  }
+  const { data, error } = await query.order("name", { ascending: true }).limit(8);
 
   if (error) {
     console.error("searchJobs query failed:", error);

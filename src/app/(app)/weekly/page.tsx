@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addDays, mondayOf, todayISO, formatDateLabel } from "@/lib/dates";
+import { getViewerTimeZone } from "@/lib/viewer-timezone";
 import { fetchOwnEntries } from "@/lib/own-entries";
 import { fetchOwnSubmission } from "@/lib/week-submissions";
 import NewEntryForm from "./new-entry-form";
@@ -34,7 +35,8 @@ export default async function WeeklyPage({
   const current = await getCurrentUser();
   if (!current) redirect("/login");
 
-  const monday = mondayOf(week || todayISO());
+  const viewerTimeZone = await getViewerTimeZone();
+  const monday = mondayOf(week || todayISO(viewerTimeZone));
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const sunday = days[6];
 
@@ -68,7 +70,7 @@ export default async function WeeklyPage({
   );
   const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
 
-  const todayStr = todayISO();
+  const todayStr = todayISO(viewerTimeZone);
 
   function dayColClass(i: number, base: string) {
     if (days[i] === todayStr) return `${base} bg-blue-50`;

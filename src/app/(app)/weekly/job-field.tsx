@@ -23,7 +23,7 @@ export default function JobField({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       startTransition(async () => {
-        const results = await searchJobs(query);
+        const results = await searchJobs(query, { activeOnly: true });
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
         setSearchedEmpty(results.length === 0);
@@ -100,7 +100,6 @@ export default function JobField({
                 className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-50"
               >
                 <span>{job.name}</span>
-                {!job.is_active && <span className="ml-2 text-gray-400">(inactive)</span>}
               </button>
             </li>
           ))}
