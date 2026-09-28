@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { resolveDetailFilters } from "./report-filters";
-import { addMonths, currentMonth, firstOfMonth } from "./dates";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { resolveDetailFilters, resolveTimesheetFilters } from "./report-filters";
+import { addMonths, currentMonth, firstOfMonth, mondayOf } from "./dates";
 import type { CurrentUser } from "./auth";
 
 function admin(): CurrentUser {
@@ -55,5 +55,34 @@ describe("resolveDetailFilters", () => {
   it("still lets a non-admin filter by job", () => {
     const filters = resolveDetailFilters({ job_id: "j1" }, employee());
     expect(filters.jobIds).toEqual(["j1"]);
+  });
+});
+
+describe("resolveTimesheetFilters", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("defaults to the current week and the viewer's own id when nothing is given", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-24T12:00:00Z")); // a Thursday
+    const filters = resolveTimesheetFilters({}, employee());
+    expect(filters.monday).toBe(mondayOf("2026-09-24"));
+    expect(filters.userId).toBe("emp-1");
+  });
+
+  it("resolves an explicit week param to that week's Monday", () => {
+    const filters = resolveTimesheetFilters({ week: "2026-09-24" }, admin());
+    expect(filters.monday).toBe("2026-09-21");
+  });
+
+  it("lets an admin view another employee's timesheet", () => {
+    const filters = resolveTimesheetFilters({ employee_id: "u1" }, admin());
+    expect(filters.userId).toBe("u1");
+  });
+
+  it("force-locks a non-admin to themselves regardless of any employee_id param", () => {
+    const filters = resolveTimesheetFilters({ employee_id: "someone-else" }, employee());
+    expect(filters.userId).toBe("emp-1");
   });
 });

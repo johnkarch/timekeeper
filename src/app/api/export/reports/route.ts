@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { addDays, formatDateLabel, payPeriodStart, shortDayLabel, todayISO } from "@/lib/dates";
-import { resolveDetailFilters } from "@/lib/report-filters";
+import { resolveDetailFilters, resolveTimesheetFilters } from "@/lib/report-filters";
 import { fetchMonthlyEntries } from "@/lib/monthly-entries";
 import { summarizeByJob } from "@/lib/job-summary";
+import { buildWeeklyTimesheetGrid, DAY_NAMES } from "@/lib/weekly-timesheet";
+import { buildWeeklyTimesheetPdf } from "@/lib/timesheet-pdf";
+import { fetchEmployeeById } from "@/lib/employees";
 import { fetchPayPeriodCalendar } from "@/lib/pay-period-calendar";
 import { fetchEmployeeHoursBreakdown } from "@/lib/employee-hours";
 import { toCsv } from "@/lib/csv";
@@ -31,10 +34,76 @@ export async function GET(request: Request) {
   if (!current) redirect("/login");
 
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type") === "summary" || searchParams.get("type") === "payroll"
-    ? searchParams.get("type")
-    : "detail";
+  const typeParam = searchParams.get("type");
+  const type =
+    typeParam === "summary" || typeParam === "payroll" || typeParam === "timesheet"
+      ? typeParam
+      : "detail";
   const formatParam = searchParams.get("format");
+
+  if (type === "timesheet") {
+    const { monday, userId } = resolveTimesheetFilters(paramsToRecord(searchParams), current);
+    const weekEnd = addDays(monday, 6);
+    const entries = await fetchMonthlyEntries({
+      start: monday,
+      end: addDays(monday, 7),
+      userIds: [userId],
+    });
+    const grid = buildWeeklyTimesheetGrid(entries, monday);
+
+    const employee =
+      userId === current.user.id
+        ? { full_name: current.fullName, email: current.user.email ?? null }
+        : await fetchEmployeeById(userId);
+    const employeeName = employee?.full_name || employee?.email || "Unknown";
+    const employeeEmail = employee?.email ?? "";
+
+    const format = formatParam === "pdf" ? "pdf" : "xlsx";
+    const filename = `timesheet-${monday}`;
+
+    if (format === "pdf") {
+      const buffer = await buildWeeklyTimesheetPdf({
+        employeeName,
+        employeeEmail,
+        weekStartLabel: formatDateLabel(monday),
+        weekEndLabel: formatDateLabel(weekEnd),
+        jobs: grid.jobs,
+        hours: grid.hours,
+        dayTotals: grid.dayTotals,
+        jobTotals: grid.jobTotals,
+        grandTotal: grid.grandTotal,
+      });
+      return new Response(new Uint8Array(buffer), {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${filename}.pdf"`,
+        },
+      });
+    }
+
+    const header = ["Day", ...grid.jobs, "Total"];
+    const rows = DAY_NAMES.map((day, i) => [
+      day,
+      ...grid.jobs.map((_, j) => String(grid.hours[i][j])),
+      String(grid.dayTotals[i]),
+    ]);
+    rows.push(["Total", ...grid.jobTotals.map(String), String(grid.grandTotal)]);
+
+    const buffer = await buildXlsx([
+      {
+        sheetName: "Timesheet",
+        header,
+        rows,
+        options: { stripeCount: DAY_NAMES.length, headerColor: HEADER_COLOR },
+      },
+    ]);
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}.xlsx"`,
+      },
+    });
+  }
 
   if (type === "payroll") {
     if (current.role !== "admin") redirect("/reports");

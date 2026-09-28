@@ -18,3 +18,23 @@ export async function fetchAllEmployees(): Promise<Employee[]> {
 
   return data ?? [];
 }
+
+// Looks up a single employee by id — used when an admin views or exports
+// another employee's Timesheet report and there's no already-fetched roster
+// to search (unlike the page, which already has fetchAllEmployees() in
+// hand). RLS ("profiles: read own or read all if admin") already gates this
+// the same way as fetchAllEmployees.
+export async function fetchEmployeeById(id: string): Promise<Employee | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("fetchEmployeeById failed:", error);
+    return null;
+  }
+  return data;
+}

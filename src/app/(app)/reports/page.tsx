@@ -6,10 +6,11 @@ import { payPeriodStart, todayISO } from "@/lib/dates";
 import { fetchAllEmployees } from "@/lib/employees";
 import DetailReport from "./detail-report";
 import SummaryReport from "./summary-report";
+import TimesheetReport from "./timesheet-report";
 import PayrollReport from "./payroll-report";
 import type { Job } from "@/lib/types";
 
-type ReportType = "detail" | "summary" | "payroll";
+type ReportType = "detail" | "summary" | "timesheet" | "payroll";
 
 async function fetchAllJobs(): Promise<Job[]> {
   const supabase = await createClient();
@@ -50,7 +51,13 @@ export default async function ReportsPage({
   if (requestedType === "payroll" && !isAdmin) redirect("/reports?type=detail");
 
   const type: ReportType =
-    requestedType === "summary" ? "summary" : requestedType === "payroll" ? "payroll" : "detail";
+    requestedType === "summary"
+      ? "summary"
+      : requestedType === "timesheet"
+        ? "timesheet"
+        : requestedType === "payroll"
+          ? "payroll"
+          : "detail";
 
   return (
     <div className="space-y-6">
@@ -67,6 +74,9 @@ export default async function ReportsPage({
         </Link>
         <Link href={tabHref("summary")} className={tabClass(type === "summary")}>
           Summary
+        </Link>
+        <Link href={tabHref("timesheet")} className={tabClass(type === "timesheet")}>
+          Timesheet
         </Link>
         {isAdmin && (
           <Link href={tabHref("payroll")} className={tabClass(type === "payroll")}>
@@ -89,6 +99,13 @@ export default async function ReportsPage({
           current={current}
           employees={isAdmin ? await fetchAllEmployees() : []}
           jobs={await fetchAllJobs()}
+        />
+      )}
+      {type === "timesheet" && (
+        <TimesheetReport
+          searchParams={params}
+          current={current}
+          employees={isAdmin ? await fetchAllEmployees() : []}
         />
       )}
       {type === "payroll" && isAdmin && (

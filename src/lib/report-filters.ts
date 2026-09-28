@@ -1,4 +1,4 @@
-import { addDays, addMonths, currentMonth, firstOfMonth } from "@/lib/dates";
+import { addDays, addMonths, currentMonth, firstOfMonth, mondayOf, todayISO } from "@/lib/dates";
 import type { CurrentUser } from "@/lib/auth";
 
 export interface ResolvedReportFilters {
@@ -47,4 +47,28 @@ export function resolveDetailFilters(
     current.role === "admin" ? toArray(searchParams.employee_id) : [current.user.id];
 
   return { start, end, billed, userIds, jobIds };
+}
+
+export interface ResolvedTimesheetFilters {
+  monday: string;
+  userId: string;
+}
+
+// Shared by the Reports page (preview) and the export route, same as
+// resolveDetailFilters above. The Timesheet report always shows exactly one
+// employee's week — a non-admin is force-locked to themselves (ignoring any
+// employee_id param), while an admin defaults to themselves too but can
+// switch to any other employee via a single-select, not a checklist.
+export function resolveTimesheetFilters(
+  searchParams: Record<string, string | string[] | undefined>,
+  current: CurrentUser
+): ResolvedTimesheetFilters {
+  const weekParam = typeof searchParams.week === "string" ? searchParams.week : todayISO();
+  const monday = mondayOf(weekParam);
+
+  const employeeId =
+    typeof searchParams.employee_id === "string" ? searchParams.employee_id : undefined;
+  const userId = current.role === "admin" && employeeId ? employeeId : current.user.id;
+
+  return { monday, userId };
 }
